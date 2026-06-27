@@ -6,57 +6,58 @@
 <title>NexGen Content Engine</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0D0D0D;--s:#161616;--s2:#1e1e1e;--o:#E8700A;--od:rgba(232,112,10,0.12);--t:#e8e8e8;--m:#888;--b:#2a2a2a}
+:root{--bg:#0D0D0D;--s:#161616;--s2:#1e1e1e;--o:#E8700A;--od:rgba(232,112,10,0.10);--t:#e8e8e8;--m:#888;--b:#2a2a2a;--g:#2a3a1a;--go:#5a9a2a}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--t);font-family:'Inter',sans-serif;min-height:100vh}
 a{color:inherit;text-decoration:none}
 
-.header{background:var(--s);border-bottom:1px solid var(--b);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99}
+.header{background:var(--s);border-bottom:2px solid var(--o);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99}
 .logo{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700}.logo span{color:var(--o)}
 .hdate{font-size:12px;color:var(--m)}
 .badge{background:var(--o);color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:1px}
 
-.wrap{max-width:860px;margin:0 auto;padding:24px 16px}
-.sec{margin-bottom:40px}
-.sec-title{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;color:var(--o);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px}
-.sec-title::after{content:'';flex:1;height:1px;background:var(--b)}
+.wrap{max-width:820px;margin:0 auto;padding:28px 16px}
 
-.card{background:var(--s);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:6px;padding:20px;margin-bottom:14px;position:relative}
-.card-num{position:absolute;top:-11px;left:14px;background:var(--o);color:#fff;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;padding:2px 10px;border-radius:20px}
-.card-source{font-size:11px;color:var(--m);letter-spacing:1px;text-transform:uppercase;margin-top:8px;margin-bottom:10px}
-.card-topic{font-family:'Oswald',sans-serif;font-size:19px;font-weight:600;line-height:1.3;margin-bottom:16px}
-.card-block{margin-bottom:12px}
-.label{font-size:10px;font-weight:600;color:var(--o);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
-.hook{font-size:15px;font-style:italic;line-height:1.5;background:var(--od);padding:12px;border-radius:4px}
-.body{font-size:14px;color:#ccc;line-height:1.5}
-.muted{color:var(--m)}
-.src-link{display:inline-block;margin-top:10px;font-size:12px;color:var(--o)}
-.src-link:hover{text-decoration:underline}
+.pulse-bar{background:var(--s);border-left:3px solid var(--o);padding:12px 16px;border-radius:0 6px 6px 0;font-size:13px;color:#ccc;line-height:1.5}
+.pulse-bar strong{color:var(--o)}
 
-.trend-row{display:flex;align-items:flex-start;gap:14px;padding:12px;background:var(--s);border:1px solid var(--b);border-radius:6px;margin-bottom:8px;transition:border-color 0.2s}
-.trend-row:hover{border-color:var(--o)}
-.trend-score{font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:var(--o);min-width:52px;text-align:right;flex-shrink:0}
-.trend-title{font-size:14px;line-height:1.4;margin-bottom:3px}
-.trend-meta{font-size:11px;color:var(--m)}
+.section-label{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;color:var(--o);letter-spacing:2.5px;text-transform:uppercase;margin:36px 0 16px;display:flex;align-items:center;gap:10px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--b)}
 
-.grow{display:flex;align-items:center;gap:12px;margin-bottom:10px}
-.gkw{font-size:13px;min-width:160px;color:var(--t)}
-.gbar-bg{flex:1;background:var(--s2);border-radius:2px;height:6px}
-.gbar{background:var(--o);height:6px;border-radius:2px}
-.gscore{font-size:12px;color:var(--m);min-width:28px;text-align:right}
+.rec-card{background:var(--s);border:1px solid var(--b);border-radius:8px;padding:0;margin-bottom:20px;overflow:hidden}
+.rec-header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--s2);border-bottom:1px solid var(--b);flex-wrap:wrap}
+.rec-num{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;color:#fff;background:var(--o);padding:3px 10px;border-radius:20px}
+.rec-type{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;color:var(--o);letter-spacing:1.5px;text-transform:uppercase}
+.rec-source{font-size:11px;color:var(--m);margin-left:auto}
+.rec-trigger{padding:14px 16px 10px;font-size:13px;color:var(--m);border-bottom:1px solid var(--b)}
+.rec-trigger em{color:#bbb;font-style:normal}
 
-.tags{display:flex;flex-wrap:wrap;gap:8px}
-.tag{background:var(--od);border:1px solid var(--o);color:var(--o);font-size:12px;padding:4px 12px;border-radius:20px}
+.rec-section{padding:14px 16px;border-bottom:1px solid var(--b)}
+.rec-section:last-of-type{border-bottom:none}
+.rec-label{font-size:10px;font-weight:600;color:var(--o);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.rec-hook{font-size:17px;font-style:italic;line-height:1.5;background:var(--od);border-left:3px solid var(--o);padding:12px 14px;border-radius:0 4px 4px 0;color:#fff}
+.rec-body{font-size:14px;color:#ccc;line-height:1.6}
+.rec-why{color:#bbb;font-size:13px}
+.rec-close{color:var(--m);font-size:13px;font-style:italic}
+.rec-link{display:block;padding:10px 16px;font-size:12px;color:var(--o);background:var(--s2);border-top:1px solid var(--b)}
+.rec-link:hover{text-decoration:underline}
 
-.influencer-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
-.inf-card{background:var(--s);border:1px solid var(--b);border-radius:6px;padding:14px}
-.inf-name{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;margin-bottom:4px}
-.inf-niche{font-size:12px;color:var(--o);margin-bottom:8px}
-.inf-tip{font-size:12px;color:var(--m);line-height:1.4}
+.trend-strip{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.trend-pill{background:var(--s2);border:1px solid var(--b);border-radius:20px;padding:6px 14px;font-size:12px;display:flex;align-items:center;gap:8px}
+.trend-pill .kw{color:var(--t)}
+.trend-pill .score{color:var(--o);font-family:'Oswald',sans-serif;font-weight:700}
+.trend-pill.hot{border-color:var(--o)}
 
-.footer{text-align:center;padding:24px;font-size:12px;color:var(--m);border-top:1px solid var(--b);margin-top:20px}
+.yt-note{font-size:13px;color:var(--m);margin-bottom:12px;line-height:1.5}
+.yt-row{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;background:var(--s);border:1px solid var(--b);border-radius:6px;margin-bottom:8px;transition:border-color 0.2s}
+.yt-row:hover{border-color:#ff4444}
+.yt-icon{font-size:16px;color:#ff4444;flex-shrink:0;padding-top:2px}
+.yt-title{font-size:14px;line-height:1.4;margin-bottom:3px}
+.yt-meta{font-size:11px;color:var(--m)}
 
-@media(max-width:600px){.gkw{min-width:110px;font-size:12px}.card-topic{font-size:16px}.influencer-grid{grid-template-columns:1fr}}
+.footer{text-align:center;padding:28px;font-size:12px;color:var(--m);border-top:1px solid var(--b);margin-top:16px}
+
+@media(max-width:600px){.rec-hook{font-size:15px}.rec-header{gap:6px}}
 </style>
 </head>
 <body>
@@ -69,194 +70,96 @@ a{color:inherit;text-decoration:none}
 
 <div class="wrap">
 
-  <div class="sec">
-    <div class="sec-title">Record This Now</div>
-    
-<div class="card">
-  <div class="card-num">#1</div>
-  <div class="card-source">r/artificial &middot; 100 upvotes</div>
-  <div class="card-topic">Cheap Chinese AI models are quickly gaining customers across the US...</div>
-  <div class="card-block">
-    <div class="label">HOOK — say this first</div>
-    <div class="hook">&ldquo;Nobody's telling blue collar guys about cheap chinese ai models are quickly gaining customers across the us. Here's what you need to know.&rdquo;</div>
-  </div>
-  <div class="card-block">
-    <div class="label">YOUR ANGLE</div>
-    <div class="body">Frame it as: this isn't for tech guys. It's a tool — like your impact driver. You just need to know how to use it.</div>
-  </div>
-  <div class="card-block">
-    <div class="label">CLOSE WITH</div>
-    <div class="body muted">Follow for more — I built something free for guys like you. Link in bio.</div>
-  </div>
-  <a href="https://www.reddit.com/r/artificial/comments/1udzf0d/cheap_chinese_ai_models_are_quickly_gaining/" target="_blank" class="src-link">View source &rarr;</a>
-</div>
-<div class="card">
-  <div class="card-num">#2</div>
-  <div class="card-source">r/artificial &middot; 100 upvotes</div>
-  <div class="card-topic">We chased a hallucinated quote through 30k training records, 4,600 ...</div>
-  <div class="card-block">
-    <div class="label">HOOK — say this first</div>
-    <div class="hook">&ldquo;I used AI to deal with we chased a hallucinated quote through 30k training records, 4,600  — here's what happened.&rdquo;</div>
-  </div>
-  <div class="card-block">
-    <div class="label">YOUR ANGLE</div>
-    <div class="body">Frame it as: this isn't for tech guys. It's a tool — like your impact driver. You just need to know how to use it.</div>
-  </div>
-  <div class="card-block">
-    <div class="label">CLOSE WITH</div>
-    <div class="body muted">Follow for more — I built something free for guys like you. Link in bio.</div>
-  </div>
-  <a href="https://www.reddit.com/r/artificial/comments/1ueaya4/we_chased_a_hallucinated_quote_through_30k/" target="_blank" class="src-link">View source &rarr;</a>
-</div>
-<div class="card">
-  <div class="card-num">#3</div>
-  <div class="card-source">r/artificial &middot; 100 upvotes</div>
-  <div class="card-topic">Claude Fable 5 may return today after 13-day government-forced susp...</div>
-  <div class="card-block">
-    <div class="label">HOOK — say this first</div>
-    <div class="hook">&ldquo;claude fable 5 may return today after 13-day government-forced susp is real. Here's how a regular guy with dirty hands handles it.&rdquo;</div>
-  </div>
-  <div class="card-block">
-    <div class="label">YOUR ANGLE</div>
-    <div class="body">Frame it as: guys like us aren't supposed to know this. That's exactly why you need to.</div>
-  </div>
-  <div class="card-block">
-    <div class="label">CLOSE WITH</div>
-    <div class="body muted">Follow for more — I built something free for guys like you. Link in bio.</div>
-  </div>
-  <a href="https://www.reddit.com/r/artificial/comments/1uf5pzu/claude_fable_5_may_return_today_after_13day/" target="_blank" class="src-link">View source &rarr;</a>
-</div>
-<div class="card">
-  <div class="card-num">#4</div>
-  <div class="card-source">r/artificial &middot; 100 upvotes</div>
-  <div class="card-topic">AI might make me fail my class</div>
-  <div class="card-block">
-    <div class="label">HOOK — say this first</div>
-    <div class="hook">&ldquo;The tech bros don't want guys like us knowing about ai might make me fail my class.&rdquo;</div>
-  </div>
-  <div class="card-block">
-    <div class="label">YOUR ANGLE</div>
-    <div class="body">Frame it as: this isn't for tech guys. It's a tool — like your impact driver. You just need to know how to use it.</div>
-  </div>
-  <div class="card-block">
-    <div class="label">CLOSE WITH</div>
-    <div class="body muted">Follow for more — I built something free for guys like you. Link in bio.</div>
-  </div>
-  <a href="https://www.reddit.com/r/artificial/comments/1ubzc6m/ai_might_make_me_fail_my_class/" target="_blank" class="src-link">View source &rarr;</a>
-</div>
-<div class="card">
-  <div class="card-num">#5</div>
-  <div class="card-source">r/artificial &middot; 100 upvotes</div>
-  <div class="card-topic">The Surge of Slop—since the release of ChatGPT-3.5 in late 2022, th...</div>
-  <div class="card-block">
-    <div class="label">HOOK — say this first</div>
-    <div class="hook">&ldquo;Blue collar dads need to hear this about the surge of slop—since the release of chatgpt-3.5 in late 2022, th — nobody else is saying it.&rdquo;</div>
-  </div>
-  <div class="card-block">
-    <div class="label">YOUR ANGLE</div>
-    <div class="body">Frame it as: this isn't for tech guys. It's a tool — like your impact driver. You just need to know how to use it.</div>
-  </div>
-  <div class="card-block">
-    <div class="label">CLOSE WITH</div>
-    <div class="body muted">Follow for more — I built something free for guys like you. Link in bio.</div>
-  </div>
-  <a href="https://www.reddit.com/r/artificial/comments/1ubnaqo/the_surge_of_slopsince_the_release_of_chatgpt35/" target="_blank" class="src-link">View source &rarr;</a>
-</div>
-  </div>
+  <div class="section-label">What your audience is feeling right now</div>
+  <div class="pulse-bar">This week's top search from your audience: <strong>"AI tools"</strong> — interest score 29.2 out of 100. That's the temperature of your market right now.</div>
+  <div class="pulse-bar" style="margin-top:10px">Rising searches this week: "aura points / aura slang", "streaming shows trending", "non-toxic air fryer", "best productivity apps 2025". These are the words your audience is using — mirror them in your hooks.</div>
 
-  <div class="sec">
-    <div class="sec-title">Trending In Your Space This Week</div>
-    
-<a href="https://www.reddit.com/r/artificial/comments/1udzf0d/cheap_chinese_ai_models_are_quickly_gaining/" target="_blank" class="trend-row">
-  <div class="trend-score">▲</div>
-  <div>
-    <div class="trend-title">Cheap Chinese AI models are quickly gaining customers across the US market: ‘This changes things’</div>
-    <div class="trend-meta">r/artificial</div>
+  <div class="section-label">Record one of these today</div>
+  
+<div class="rec-card">
+  <div class="rec-header">
+    <span class="rec-num">VIDEO 1</span>
+    <span class="rec-type">AI DEMO</span>
+    <span class="rec-source">Source: r/artificial</span>
   </div>
-</a>
-<a href="https://www.reddit.com/r/artificial/comments/1ueaya4/we_chased_a_hallucinated_quote_through_30k/" target="_blank" class="trend-row">
-  <div class="trend-score">▲</div>
-  <div>
-    <div class="trend-title">We chased a hallucinated quote through 30k training records, 4,600 transcripts, and our own system prompt. Turned out to be two separate bugs</div>
-    <div class="trend-meta">r/artificial</div>
+  <div class="rec-trigger">What's happening out there: <em>The Surge of Slop—since the release of ChatGPT-3.5 in late 2022, the num...</em></div>
+  <div class="rec-section">
+    <div class="rec-label">OPEN WITH THIS</div>
+    <div class="rec-hook">"You've already used AI. You just didn't know what it could actually do for you."</div>
   </div>
-</a>
-<a href="https://www.reddit.com/r/artificial/comments/1uf5pzu/claude_fable_5_may_return_today_after_13day/" target="_blank" class="trend-row">
-  <div class="trend-score">▲</div>
-  <div>
-    <div class="trend-title">Claude Fable 5 may return today after 13-day government-forced suspension</div>
-    <div class="trend-meta">r/artificial</div>
+  <div class="rec-section">
+    <div class="rec-label">WHAT TO DO ON CAMERA</div>
+    <div class="rec-body">Do one real thing with AI on camera. Don't explain it first — just do it, then explain what just happened. Guys need to see the result before they believe the tool is real.</div>
   </div>
-</a>
-<a href="https://www.reddit.com/r/artificial/comments/1ubzc6m/ai_might_make_me_fail_my_class/" target="_blank" class="trend-row">
-  <div class="trend-score">▲</div>
-  <div>
-    <div class="trend-title">AI might make me fail my class</div>
-    <div class="trend-meta">r/artificial</div>
+  <div class="rec-section">
+    <div class="rec-label">WHY THIS HITS FOR YOUR GUYS</div>
+    <div class="rec-body rec-why">"AI is not for guys like me" is the #1 barrier your audience has. Every time you break that belief, you earn their trust and their follow.</div>
   </div>
-</a>
-<a href="https://www.reddit.com/r/artificial/comments/1ubnaqo/the_surge_of_slopsince_the_release_of_chatgpt35/" target="_blank" class="trend-row">
-  <div class="trend-score">▲</div>
-  <div>
-    <div class="trend-title">The Surge of Slop—since the release of ChatGPT-3.5 in late 2022, the number of e-books published on Amazon has skyrocketed, tripling by late 2025. A new scientific analysis shows that this is entirely due to the rise of AI-generated books, which now far outnumber human-written books. [The Economist]</div>
-    <div class="trend-meta">r/artificial</div>
+  <div class="rec-section">
+    <div class="rec-label">CLOSE EVERY VIDEO WITH</div>
+    <div class="rec-body rec-close">"Follow for more — I built something free for guys like you. Link in bio."</div>
   </div>
-</a>
+  <a href="https://www.reddit.com/r/artificial/comments/1ubnaqo/the_surge_of_slopsince_the_release_of_chatgpt35/" target="_blank" class="rec-link">See what sparked this &rarr;</a>
+</div>
+<div class="rec-card">
+  <div class="rec-header">
+    <span class="rec-num">VIDEO 2</span>
+    <span class="rec-type">AI DEMO</span>
+    <span class="rec-source">Source: r/artificial</span>
   </div>
+  <div class="rec-trigger">What's happening out there: <em>Cheap Chinese AI models are quickly gaining customers across the US mark...</em></div>
+  <div class="rec-section">
+    <div class="rec-label">OPEN WITH THIS</div>
+    <div class="rec-hook">"This isn't for tech guys. This is for guys who work and need things done."</div>
+  </div>
+  <div class="rec-section">
+    <div class="rec-label">WHAT TO DO ON CAMERA</div>
+    <div class="rec-body">Do one real thing with AI on camera. Don't explain it first — just do it, then explain what just happened. Guys need to see the result before they believe the tool is real.</div>
+  </div>
+  <div class="rec-section">
+    <div class="rec-label">WHY THIS HITS FOR YOUR GUYS</div>
+    <div class="rec-body rec-why">"AI is not for guys like me" is the #1 barrier your audience has. Every time you break that belief, you earn their trust and their follow.</div>
+  </div>
+  <div class="rec-section">
+    <div class="rec-label">CLOSE EVERY VIDEO WITH</div>
+    <div class="rec-body rec-close">"Follow for more — I built something free for guys like you. Link in bio."</div>
+  </div>
+  <a href="https://www.reddit.com/r/artificial/comments/1udzf0d/cheap_chinese_ai_models_are_quickly_gaining/" target="_blank" class="rec-link">See what sparked this &rarr;</a>
+</div>
+<div class="rec-card">
+  <div class="rec-header">
+    <span class="rec-num">VIDEO 3</span>
+    <span class="rec-type">AI DEMO</span>
+    <span class="rec-source">Source: r/artificial</span>
+  </div>
+  <div class="rec-trigger">What's happening out there: <em>We chased a hallucinated quote through 30k training records, 4,600 trans...</em></div>
+  <div class="rec-section">
+    <div class="rec-label">OPEN WITH THIS</div>
+    <div class="rec-hook">"Guys in the office are using this to do in 10 minutes what takes you a day. That's the problem."</div>
+  </div>
+  <div class="rec-section">
+    <div class="rec-label">WHAT TO DO ON CAMERA</div>
+    <div class="rec-body">Do one real thing with AI on camera. Don't explain it first — just do it, then explain what just happened. Guys need to see the result before they believe the tool is real.</div>
+  </div>
+  <div class="rec-section">
+    <div class="rec-label">WHY THIS HITS FOR YOUR GUYS</div>
+    <div class="rec-body rec-why">"AI is not for guys like me" is the #1 barrier your audience has. Every time you break that belief, you earn their trust and their follow.</div>
+  </div>
+  <div class="rec-section">
+    <div class="rec-label">CLOSE EVERY VIDEO WITH</div>
+    <div class="rec-body rec-close">"Follow for more — I built something free for guys like you. Link in bio."</div>
+  </div>
+  <a href="https://www.reddit.com/r/artificial/comments/1ueaya4/we_chased_a_hallucinated_quote_through_30k/" target="_blank" class="rec-link">See what sparked this &rarr;</a>
+</div>
+
+  <div class="section-label">Search volume this week</div><div class="trend-strip"><div class="trend-pill hot"><span class="kw">AI tools</span><span class="score">29.2</span></div><div class="trend-pill hot"><span class="kw">ChatGPT work</span><span class="score">5.3</span></div><div class="trend-pill"><span class="kw">artificial intelligence jobs</span><span class="score">0.3</span></div><div class="trend-pill"><span class="kw">blue collar automation</span><span class="score">0.0</span></div><div class="trend-pill"><span class="kw">AI replace workers</span><span class="score">0.0</span></div></div>
 
   
-  <div class="sec">
-    <div class="sec-title">What's Getting Views on YouTube</div>
-    <div class="muted" style="font-size:13px;padding:12px">Add YOUTUBE_API_KEY as a GitHub secret to enable YouTube research.</div>
-  </div>
-
-  <div class="sec">
-    <div class="sec-title">AI &amp; Work — Google Trends</div>
-    
-<div class="grow">
-  <div class="gkw">AI tools</div>
-  <div class="gbar-bg"><div class="gbar" style="width:30%"></div></div>
-  <div class="gscore">30.3</div>
-</div>
-<div class="grow">
-  <div class="gkw">ChatGPT work</div>
-  <div class="gbar-bg"><div class="gbar" style="width:5%"></div></div>
-  <div class="gscore">5.5</div>
-</div>
-<div class="grow">
-  <div class="gkw">artificial intelligence jobs</div>
-  <div class="gbar-bg"><div class="gbar" style="width:0%"></div></div>
-  <div class="gscore">0.4</div>
-</div>
-<div class="grow">
-  <div class="gkw">blue collar automation</div>
-  <div class="gbar-bg"><div class="gbar" style="width:0%"></div></div>
-  <div class="gscore">0.0</div>
-</div>
-<div class="grow">
-  <div class="gkw">AI replace workers</div>
-  <div class="gbar-bg"><div class="gbar" style="width:0%"></div></div>
-  <div class="gscore">0.0</div>
-</div>
-  </div>
-
-  <div class="sec"><div class="sec-title">Rising Searches This Week</div><div class="tags"><span class="tag">aura points / aura slang</span><span class="tag">streaming shows trending</span><span class="tag">tech gadgets 2025</span><span class="tag">minimalist lifestyle trend</span><span class="tag">non-toxic air fryer</span><span class="tag">k-pop trending</span></div></div>
-
-  <div class="sec">
-    <div class="sec-title">Adjacent Influencers — Watch These</div>
-    <div class="influencer-grid">
-      <div class="inf-card"><div class="inf-name">AI Educators</div><div class="inf-niche">AI for regular people</div><div class="inf-tip">Search YouTube: "AI tools for beginners 2025" — watch what hooks they open with and steal the angle, not the content.</div></div>
-      <div class="inf-card"><div class="inf-name">Blue Collar Creators</div><div class="inf-niche">Trades &amp; skilled work</div><div class="inf-tip">Search: "blue collar success story" on TikTok. Note what comment sections are saying — those are your hooks.</div></div>
-      <div class="inf-card"><div class="inf-name">Dad Content</div><div class="inf-niche">Fatherhood &amp; family</div><div class="inf-tip">Search: "working dad advice" on YouTube. Highest view counts tell you exactly what resonates with your audience.</div></div>
-      <div class="inf-card"><div class="inf-name">Personal Finance</div><div class="inf-niche">Money stress &amp; bills</div><div class="inf-tip">Search: "how to negotiate bills" or "reading your paycheck" — these are AI use cases your audience desperately needs.</div></div>
-      <div class="inf-card"><div class="inf-name">Anti-Work / Hustle</div><div class="inf-niche">Job frustration content</div><div class="inf-tip">r/antiwork top posts show exactly what blue collar workers are angry about. That anger is your content fuel.</div></div>
-    </div>
-  </div>
 
 </div>
 
 <div class="footer">
-  NexGen Caveman Content Engine &middot; Updated Saturday, June 27, 2026 at 01:13 PM UTC &middot; Built for Charlie
+  NexGen Caveman Content Engine &middot; Saturday, June 27, 2026 at 01:36 PM UTC &middot; Built for Charlie
 </div>
 
 </body>
