@@ -230,11 +230,19 @@ HOOK_BY_TYPE = {
 }
 
 WHAT_TO_SHOW = {
-    'job_threat': "Pull up a news article about it on your phone. Read one line out loud. Then say: \"Here's what that actually means for guys who work with their hands.\" No script needed — just react honestly.",
-    'money': "Open ChatGPT on screen. Paste in a bill, a contract clause, or a fine print paragraph. Ask it to explain it like you're not a lawyer. Show the answer. That's the whole video.",
-    'ai_tool': "Do one real thing with AI on camera. Don't explain it first — just do it, then explain what just happened. Guys need to see the result before they believe the tool is real.",
-    'family': "Talk to the camera like you're talking to a buddy at a job site. No script. What does this mean for your family? Why does it matter to you personally? That's the whole video.",
-    'body': "Talk directly to camera. What's your backup plan? When did you start thinking about it? Be honest. Guys in the trades feel this but nobody's saying it out loud — you saying it is the video.",
+    'job_threat': "Look straight at the camera. Say the hook. Then tell them what you actually think is happening — not what the news says, what YOU think. End with: \"Nobody's preparing for this. I am. Follow and I'll show you how.\" One take. Raw is better.",
+    'money': "Look straight at the camera. Tell them about a time you got hit with a bill, a clause, or fine print that felt designed to screw you. Then tell them AI is the thing that evens that fight. You don't need to show anything — your face and your words are the video.",
+    'ai_tool': "Look straight at the camera. Tell them one specific thing AI did for you — saved you time, explained something confusing, handled something you dreaded. Keep it real and short. \"I'm not a tech guy. Here's what I did.\" That's it.",
+    'family': "Look straight at the camera. Talk like you're telling your brother something important. What does this mean for your kids, your wife, your future? Why does a working dad need to care about this? Honest and direct. No script.",
+    'body': "Look straight at the camera. Ask them: \"What's your plan B?\" Pause. Let it sit. Then tell them yours. This is the video that hits hardest because nobody else in this space is saying it out loud.",
+    'general': "Look straight at the camera. React to this topic like you're talking to a guy on the job site who hasn't heard about it yet. What does it mean? Why should he care? Keep it under 60 seconds.",
+}
+
+SOURCE_EXPLAIN = {
+    'Reddit': "This topic is actively being discussed on Reddit right now — meaning real people in your audience are thinking about it this week, not last month.",
+    'Google Trends': "This is a rising search term in the US this week — meaning your audience is actively typing this into Google and looking for answers.",
+    'YouTube': "Real videos on this topic are getting views right now — meaning demand is proven. People are already watching this content.",
+    'Evergreen': "This topic consistently resonates with blue collar dads regardless of the news cycle. It never stops being relevant to your audience.",
 }
 
 WHY_THIS_MATTERS = {
@@ -298,18 +306,30 @@ def build_recommendations(posts, trends_data, youtube_videos):
         used_hooks.add(hook)
 
         short_title = title if len(title) <= 75 else title[:72] + '...'
-        source = p['subreddit']
-        if source not in ('Google Trends', 'Evergreen'):
-            source = f"r/{source}"
+        raw_source = p['subreddit']
+        if 'YouTube' in raw_source:
+            src_key = 'YouTube'
+            source = raw_source
+        elif raw_source == 'Google Trends':
+            src_key = 'Google Trends'
+            source = 'Google Trends'
+        elif raw_source == 'Evergreen':
+            src_key = 'Evergreen'
+            source = 'Evergreen Topic'
+        else:
+            src_key = 'Reddit'
+            source = f"r/{raw_source}"
 
         recs.append({
             'n': len(recs) + 1,
             'title': short_title,
             'source': source,
+            'src_key': src_key,
             'topic_type': topic_type,
             'hook': hook,
             'what_to_show': WHAT_TO_SHOW[topic_type],
             'why': WHY_THIS_MATTERS[topic_type],
+            'src_explain': SOURCE_EXPLAIN[src_key],
             'url': p['url'],
         })
 
@@ -327,10 +347,12 @@ def build_recommendations(posts, trends_data, youtube_videos):
                 'n': len(recs) + 1,
                 'title': p['title'],
                 'source': 'Evergreen Topic',
+                'src_key': 'Evergreen',
                 'topic_type': topic_type,
                 'hook': hook,
                 'what_to_show': WHAT_TO_SHOW[topic_type],
                 'why': WHY_THIS_MATTERS[topic_type],
+                'src_explain': SOURCE_EXPLAIN['Evergreen'],
                 'url': p['url'],
             })
 
@@ -400,15 +422,18 @@ def build_html(recs, trends_data, youtube_videos):
   <div class="rec-header">
     <span class="rec-num">VIDEO {r['n']}</span>
     <span class="rec-type">{type_label}</span>
-    <span class="rec-source">Source: {r['source']}</span>
+    <span class="rec-source">{r['source']}</span>
   </div>
-  <div class="rec-trigger">What's happening out there: <em>{r['title']}</em></div>
+  <div class="rec-trigger">
+    <strong>What sparked this:</strong> <em>{r['title']}</em>
+    <div class="rec-src-explain">{r['src_explain']}</div>
+  </div>
   <div class="rec-section">
-    <div class="rec-label">OPEN WITH THIS</div>
+    <div class="rec-label">OPEN WITH THIS — say it straight to camera</div>
     <div class="rec-hook">"{r['hook']}"</div>
   </div>
   <div class="rec-section">
-    <div class="rec-label">WHAT TO DO ON CAMERA</div>
+    <div class="rec-label">HOW TO DO IT — talking head, no screen needed</div>
     <div class="rec-body">{r['what_to_show']}</div>
   </div>
   <div class="rec-section">
@@ -419,7 +444,7 @@ def build_html(recs, trends_data, youtube_videos):
     <div class="rec-label">CLOSE EVERY VIDEO WITH</div>
     <div class="rec-body rec-close">"Follow for more — I built something free for guys like you. Link in bio."</div>
   </div>
-  <a href="{r['url']}" target="_blank" class="rec-link">See what sparked this &rarr;</a>
+  <a href="{r['url']}" target="_blank" class="rec-link">See what sparked this recommendation &rarr;</a>
 </div>'''
         return out
 
@@ -473,6 +498,7 @@ a{{color:inherit;text-decoration:none}}
 .trend-pill .score{{color:var(--o);font-family:'Oswald',sans-serif;font-weight:700}}
 .trend-pill.hot{{border-color:var(--o)}}
 
+.rec-src-explain{{font-size:12px;color:var(--m);margin-top:6px;line-height:1.5;font-style:normal}}
 .yt-note{{font-size:13px;color:var(--m);margin-bottom:12px;line-height:1.5}}
 .yt-row{{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;background:var(--s);border:1px solid var(--b);border-radius:6px;margin-bottom:8px;transition:border-color 0.2s}}
 .yt-row:hover{{border-color:#ff4444}}
@@ -494,6 +520,9 @@ a{{color:inherit;text-decoration:none}}
 </div>
 
 <div class="wrap">
+
+  <div class="section-label">How this works</div>
+  <div class="pulse-bar">Every day this tool pulls from three sources: <strong>Reddit</strong> (what your audience is actually saying right now), <strong>Google Trends</strong> (what they're searching for), and <strong>YouTube</strong> (what's already getting views in your space). It scores every topic by how relevant it is to a blue collar dad — job security, money, family, AI, body breaking down. The top 3 become your video recommendations. Every card shows you exactly where the data came from and why that topic was chosen.</div>
 
   <div class="section-label">What your audience is feeling right now</div>
   {top_trend_line}
