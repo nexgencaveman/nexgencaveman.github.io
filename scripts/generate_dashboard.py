@@ -34,6 +34,19 @@ TREND_KEYWORDS = [
     'AI replace workers',
 ]
 
+YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY', '')
+
+# What your audience is actually searching and watching on YouTube
+YOUTUBE_SEARCHES = [
+    'AI tools for workers',
+    'blue collar automation 2025',
+    'ChatGPT real life use',
+    'AI replace blue collar jobs',
+    'working dad financial tips',
+    'how to use AI to save money',
+    'trade jobs and technology',
+]
+
 # ─── DATA FETCHING ────────────────────────────────────────────────────────────
 
 def fetch_reddit(subreddits, limit=5):
@@ -68,6 +81,53 @@ def fetch_reddit(subreddits, limit=5):
             seen.add(p['title'])
             unique.append(p)
     return unique[:40]
+
+def fetch_youtube():
+    """
+    Returns top-performing YouTube videos for Charlie's audience topics.
+    Each video proves demand: real people searched for and watched this.
+    That makes it a validated content idea, not a guess.
+    """
+    if not YOUTUBE_API_KEY:
+        print("  YOUTUBE_API_KEY not set — skipping")
+        return []
+    videos = []
+    seen_titles = set()
+    for query in YOUTUBE_SEARCHES:
+        try:
+            r = requests.get(
+                'https://www.googleapis.com/youtube/v3/search',
+                params={
+                    'part': 'snippet',
+                    'q': query,
+                    'type': 'video',
+                    'order': 'viewCount',
+                    'publishedAfter': '2024-06-01T00:00:00Z',
+                    'maxResults': 3,
+                    'relevanceLanguage': 'en',
+                    'regionCode': 'US',
+                    'key': YOUTUBE_API_KEY,
+                },
+                timeout=10,
+            )
+            if r.status_code == 200:
+                for item in r.json().get('items', []):
+                    title = item['snippet']['title']
+                    if title in seen_titles:
+                        continue
+                    seen_titles.add(title)
+                    vid_id = item['id']['videoId']
+                    videos.append({
+                        'title': title,
+                        'channel': item['snippet']['channelTitle'],
+                        'url': f"https://www.youtube.com/watch?v={vid_id}",
+                        'query': query,
+                    })
+            time.sleep(0.3)
+        except Exception as e:
+            print(f"  YouTube '{query}': {e}")
+    return videos[:12]
+
 
 def fetch_trends():
     if not PYTRENDS_AVAILABLE:
@@ -186,11 +246,17 @@ WHY_THIS_MATTERS = {
     'general': "This touches something your audience is already thinking about. Your job is to connect it to their real life — trades, family, money — in plain language.",
 }
 
-def build_recommendations(posts, trends_data):
+def build_recommendations(posts, trends_data, youtube_videos):
     # Score and sort reddit posts by relevance to blue collar dad
     scored = [(relevance_score(p['title']), p) for p in posts]
     scored.sort(key=lambda x: x[0], reverse=True)
     top_posts = [p for _, p in scored[:12]]
+
+    # Pull in high-performing YouTube titles as topic candidates
+    # If people are watching it, Charlie's audience wants it
+    yt_topics = []
+    for v in youtube_videos[:6]:
+        yt_topics.append({'title': v['title'], 'url': v['url'], 'subreddit': f"YouTube · {v['channel']}"})
 
     # Pull in rising trend topics as additional candidates
     trend_topics = []
@@ -198,8 +264,8 @@ def build_recommendations(posts, trends_data):
         for kw in trends_data['rising'][:4]:
             trend_topics.append({'title': kw, 'url': f"https://trends.google.com/trends/explore?q={kw.replace(' ','+')}&geo=US", 'subreddit': 'Google Trends'})
 
-    # Combine — reddit first (real conversation), then trends
-    candidates = top_posts + trend_topics
+    # Combine — reddit (what they're saying) + youtube (what they're watching) + trends (what they're searching)
+    candidates = top_posts + yt_topics + trend_topics
 
     # Fallback pool if Reddit blocked entirely
     fallback = [
@@ -281,7 +347,25 @@ TYPE_LABELS = {
     'general': 'AUDIENCE INSIGHT',
 }
 
-def build_html(recs, trends_data):
+def build_youtube_section(youtube_videos):
+    if not youtube_videos:
+        return ''
+    rows = ''
+    for v in youtube_videos[:8]:
+        rows += f'''
+<a href="{v['url']}" target="_blank" class="yt-row">
+  <div class="yt-icon">&#9654;</div>
+  <div>
+    <div class="yt-title">{v['title']}</div>
+    <div class="yt-meta">{v['channel']} &middot; searched: {v['query']}</div>
+  </div>
+</a>'''
+    return f'''<div class="section-label">Proven demand — people are already watching this</div>
+<div class="yt-note">These are real videos getting real views on topics your audience cares about. This is what demand looks like. Make your version.</div>
+{rows}'''
+
+
+def build_html(recs, trends_data, youtube_videos):
     now = datetime.now()
     date_str = now.strftime("%A, %B %d, %Y")
     time_str = now.strftime("%I:%M %p UTC")
@@ -379,6 +463,13 @@ a{{color:inherit;text-decoration:none}}
 .trend-pill .score{{color:var(--o);font-family:'Oswald',sans-serif;font-weight:700}}
 .trend-pill.hot{{border-color:var(--o)}}
 
+.yt-note{{font-size:13px;color:var(--m);margin-bottom:12px;line-height:1.5}}
+.yt-row{{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;background:var(--s);border:1px solid var(--b);border-radius:6px;margin-bottom:8px;transition:border-color 0.2s}}
+.yt-row:hover{{border-color:#ff4444}}
+.yt-icon{{font-size:16px;color:#ff4444;flex-shrink:0;padding-top:2px}}
+.yt-title{{font-size:14px;line-height:1.4;margin-bottom:3px}}
+.yt-meta{{font-size:11px;color:var(--m)}}
+
 .footer{{text-align:center;padding:28px;font-size:12px;color:var(--m);border-top:1px solid var(--b);margin-top:16px}}
 
 @media(max-width:600px){{.rec-hook{{font-size:15px}}.rec-header{{gap:6px}}}}
@@ -403,6 +494,8 @@ a{{color:inherit;text-decoration:none}}
 
   {'<div class="section-label">Search volume this week</div><div class="trend-strip">' + ''.join(f\'<div class="trend-pill{" hot" if t["interest"] > 5 else ""}"><span class="kw">{t["keyword"]}</span><span class="score">{t["interest"]}</span></div>\' for t in trends_data.get("trends", [])) + "</div>" if trends_data.get("trends") else ""}
 
+  {build_youtube_section(youtube_videos)}
+
 </div>
 
 <div class="footer">
@@ -425,12 +518,16 @@ def main():
     trends = fetch_trends()
     print(f"  {len(trends.get('trends', []))} trend keywords, {len(trends.get('rising', []))} rising")
 
+    print("Fetching YouTube...")
+    youtube = fetch_youtube()
+    print(f"  {len(youtube)} YouTube videos fetched")
+
     print("Building recommendations...")
-    recs = build_recommendations(posts, trends)
+    recs = build_recommendations(posts, trends, youtube)
     print(f"  {len(recs)} video recommendations built")
 
     print("Generating HTML...")
-    html = build_html(recs, trends)
+    html = build_html(recs, trends, youtube)
 
     os.makedirs('dashboard', exist_ok=True)
     with open('dashboard/index.html', 'w', encoding='utf-8') as f:
