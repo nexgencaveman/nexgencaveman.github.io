@@ -370,6 +370,16 @@ def build_html(recs, trends_data, youtube_videos):
     date_str = now.strftime("%A, %B %d, %Y")
     time_str = now.strftime("%I:%M %p UTC")
 
+    # Build trend strip separately to avoid backslash-in-f-string error
+    if trends_data.get('trends'):
+        pills = ''
+        for t in trends_data['trends']:
+            hot_class = ' hot' if t['interest'] > 5 else ''
+            pills += f'<div class="trend-pill{hot_class}"><span class="kw">{t["keyword"]}</span><span class="score">{t["interest"]}</span></div>'
+        trend_strip_section = f'<div class="section-label">Search volume this week</div><div class="trend-strip">{pills}</div>'
+    else:
+        trend_strip_section = ''
+
     # Top trend data for the "What your guys are searching" strip
     top_trend = trends_data['trends'][0] if trends_data.get('trends') else None
     top_trend_line = ''
@@ -492,7 +502,7 @@ a{{color:inherit;text-decoration:none}}
   <div class="section-label">Record one of these today</div>
   {rec_cards()}
 
-  {'<div class="section-label">Search volume this week</div><div class="trend-strip">' + ''.join(f\'<div class="trend-pill{" hot" if t["interest"] > 5 else ""}"><span class="kw">{t["keyword"]}</span><span class="score">{t["interest"]}</span></div>\' for t in trends_data.get("trends", [])) + "</div>" if trends_data.get("trends") else ""}
+  {trend_strip_section}
 
   {build_youtube_section(youtube_videos)}
 
