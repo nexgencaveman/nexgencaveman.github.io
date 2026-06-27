@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
 NexGen Caveman Content Engine
-Runs daily via GitHub Actions — generates a content dashboard for Charlie
+Runs daily via GitHub Actions — tells Charlie exactly what to record today.
+Target: blue collar dads who think AI isn't for them. Body wearing out. No backup plan.
 """
 
 import requests
-import json
 import random
 import os
 import time
@@ -18,14 +18,11 @@ try:
 except ImportError:
     PYTRENDS_AVAILABLE = False
 
-# ─── CONFIGURATION ────────────────────────────────────────────────────────────
+# ─── CONFIG ───────────────────────────────────────────────────────────────────
 
 SUBREDDITS = [
-    # AI / Tech
-    'artificial', 'ChatGPT', 'MachineLearning', 'technology', 'Futurology',
-    # Blue Collar / Trades
+    'artificial', 'ChatGPT', 'technology', 'Futurology',
     'Construction', 'electricians', 'HVAC', 'Welding', 'Plumbing', 'carpentry', 'Truckers', 'BlueCollar',
-    # Dad / Family / Money
     'daddit', 'Dads', 'personalfinance', 'povertyfinance', 'antiwork', 'jobs', 'financialindependence',
 ]
 
@@ -37,35 +34,11 @@ TREND_KEYWORDS = [
     'AI replace workers',
 ]
 
-YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY', '')
-
-YOUTUBE_SEARCHES = [
-    'AI tools for workers 2025',
-    'blue collar AI automation',
-    'ChatGPT for regular people',
-    'AI replace jobs blue collar',
-    'working dad financial tips',
-]
-
-HOOK_TEMPLATES = [
-    "Nobody's telling blue collar guys about [TOPIC]. Here's what you need to know.",
-    "Your employer already knows [TOPIC] is coming. Do you?",
-    "I used AI to deal with [TOPIC] — here's what happened.",
-    "The tech bros don't want guys like us knowing about [TOPIC].",
-    "[TOPIC] is real. Here's how a regular guy with dirty hands handles it.",
-    "I asked AI about [TOPIC] so you don't have to figure it out yourself.",
-    "Blue collar dads need to hear this about [TOPIC] — nobody else is saying it.",
-    "While everyone else is panicking about [TOPIC], here's what I'm actually doing.",
-    "They told me [TOPIC] wasn't for guys like me. They were wrong.",
-    "My boss knows about [TOPIC]. Your boss does too. Do you?",
-]
-
-# ─── REDDIT (RSS fallback — works from GitHub Actions) ────────────────────────
+# ─── DATA FETCHING ────────────────────────────────────────────────────────────
 
 def fetch_reddit(subreddits, limit=5):
     posts = []
     for sub in subreddits:
-        # Use RSS feed — no auth needed, not blocked by AWS IPs
         try:
             url = f'https://www.reddit.com/r/{sub}/top.rss?t=week&limit={limit}'
             headers = {
@@ -76,89 +49,25 @@ def fetch_reddit(subreddits, limit=5):
             if r.status_code == 200:
                 root = ET.fromstring(r.content)
                 ns = {'atom': 'http://www.w3.org/2005/Atom'}
-                entries = root.findall('.//atom:entry', ns)
-                for entry in entries[:limit]:
+                for entry in root.findall('.//atom:entry', ns):
                     title_el = entry.find('atom:title', ns)
                     link_el = entry.find('atom:link', ns)
-                    content_el = entry.find('atom:content', ns)
                     if title_el is None:
                         continue
-                    title = title_el.text or ''
+                    title = (title_el.text or '').strip()
                     url_post = link_el.get('href', '') if link_el is not None else ''
-                    # Parse upvotes from content if available
-                    score = 100  # RSS doesn't give scores, use placeholder
-                    posts.append({
-                        'title': title,
-                        'score': score,
-                        'comments': 0,
-                        'url': url_post,
-                        'subreddit': sub,
-                    })
+                    if len(title) > 15:
+                        posts.append({'title': title, 'url': url_post, 'subreddit': sub})
             time.sleep(0.5)
         except Exception as e:
-            print(f"  Reddit r/{sub} RSS: {e}")
-            # Try JSON API as fallback
-            try:
-                url2 = f'https://www.reddit.com/r/{sub}/top.json?t=week&limit={limit}'
-                headers2 = {'User-Agent': 'NexGenCavemanBot/1.0'}
-                r2 = requests.get(url2, headers=headers2, timeout=10)
-                if r2.status_code == 200:
-                    for item in r2.json().get('data', {}).get('children', []):
-                        p = item['data']
-                        posts.append({
-                            'title': p['title'],
-                            'score': p.get('score', 100),
-                            'comments': p.get('num_comments', 0),
-                            'url': f"https://reddit.com{p['permalink']}",
-                            'subreddit': sub,
-                        })
-            except Exception as e2:
-                print(f"  Reddit r/{sub} JSON also failed: {e2}")
-    # Deduplicate by title
+            print(f"  Reddit r/{sub}: {e}")
     seen = set()
     unique = []
     for p in posts:
-        if p['title'] not in seen and len(p['title']) > 10:
+        if p['title'] not in seen:
             seen.add(p['title'])
             unique.append(p)
-    return unique[:30]
-
-# ─── YOUTUBE ──────────────────────────────────────────────────────────────────
-
-def fetch_youtube(searches):
-    if not YOUTUBE_API_KEY:
-        print("  YouTube API key not set — skipping")
-        return []
-    videos = []
-    for query in searches[:3]:
-        try:
-            url = 'https://www.googleapis.com/youtube/v3/search'
-            params = {
-                'part': 'snippet',
-                'q': query,
-                'type': 'video',
-                'order': 'viewCount',
-                'publishedAfter': '2025-01-01T00:00:00Z',
-                'maxResults': 3,
-                'key': YOUTUBE_API_KEY,
-            }
-            r = requests.get(url, params=params, timeout=10)
-            if r.status_code == 200:
-                for item in r.json().get('items', []):
-                    snippet = item['snippet']
-                    vid_id = item['id']['videoId']
-                    videos.append({
-                        'title': snippet['title'],
-                        'channel': snippet['channelTitle'],
-                        'url': f"https://www.youtube.com/watch?v={vid_id}",
-                        'query': query,
-                    })
-            time.sleep(0.3)
-        except Exception as e:
-            print(f"  YouTube search '{query}': {e}")
-    return videos
-
-# ─── GOOGLE TRENDS ────────────────────────────────────────────────────────────
+    return unique[:40]
 
 def fetch_trends():
     if not PYTRENDS_AVAILABLE:
@@ -177,7 +86,7 @@ def fetch_trends():
             related = pt.related_queries()
             kw0 = TREND_KEYWORDS[0]
             if kw0 in related and related[kw0]['rising'] is not None:
-                rising = related[kw0]['rising']['query'].head(6).tolist()
+                rising = related[kw0]['rising']['query'].head(5).tolist()
         except:
             pass
         return {'trends': sorted(trends, key=lambda x: x['interest'], reverse=True), 'rising': rising}
@@ -185,168 +94,240 @@ def fetch_trends():
         print(f"  Trends error: {e}")
         return {'trends': [], 'rising': []}
 
-# ─── CARD GENERATION ──────────────────────────────────────────────────────────
+# ─── RECOMMENDATION ENGINE ────────────────────────────────────────────────────
 
-def spin(topic):
-    t = topic.lower()
-    if any(w in t for w in ['job', 'work', 'employ', 'laid', 'fired', 'replac', 'automat']):
-        return "Frame it as: guys who use AI stay employed longer. Your competition isn't AI — it's the guy next to you who's already using it."
-    elif any(w in t for w in ['money', 'financ', 'cost', 'debt', 'pay', 'wage', 'salary', 'bill']):
-        return "Frame it as: AI reads the fine print they're hiding from you. Your family deserves to keep more of what you earn."
-    elif any(w in t for w in ['ai', 'chatgpt', 'robot', 'machine', 'tech', 'software']):
-        return "Frame it as: this isn't for tech guys. It's a tool — like your impact driver. You just need to know how to use it."
-    elif any(w in t for w in ['health', 'body', 'injur', 'pain', 'doctor', 'medical']):
-        return "Frame it as: your body has a retirement date. AI doesn't. Start building your backup before your body forces you to."
-    elif any(w in t for w in ['family', 'dad', 'kid', 'child', 'wife', 'father']):
-        return "Frame it as: everything you do is for them. AI buys you more time and protects what you've built."
-    elif any(w in t for w in ['school', 'degree', 'college', 'education', 'learn']):
-        return "Frame it as: you don't need a degree to use AI. You need the right questions. That's it."
-    else:
-        return "Frame it as: guys like us aren't supposed to know this. That's exactly why you need to."
+# Every topic is scored by how relevant it is to a blue collar dad
+BLUE_COLLAR_SIGNALS = [
+    'job', 'work', 'employ', 'laid off', 'fired', 'replace', 'automat', 'wage', 'pay', 'salary',
+    'overtime', 'union', 'trade', 'skill', 'construction', 'electrician', 'hvac', 'weld', 'plumb',
+    'truck', 'mechanic', 'physical', 'body', 'injur', 'money', 'debt', 'bill', 'financ', 'afford',
+    'family', 'dad', 'father', 'kid', 'child', 'wife', 'mortgage', 'rent', 'insurance',
+    'ai', 'chatgpt', 'robot', 'tech', 'automat', 'software', 'tool',
+]
 
-def build_cards(posts, trends_data):
-    cards = []
-    topics = []
+def relevance_score(title):
+    t = title.lower()
+    return sum(1 for s in BLUE_COLLAR_SIGNALS if s in t)
 
-    for p in posts[:8]:
-        title = p['title'] if len(p['title']) <= 70 else p['title'][:67] + '...'
-        detail = f"{p['score']:,} upvotes" if p['comments'] == 0 else f"{p['score']:,} upvotes · {p['comments']:,} comments"
-        topics.append({'topic': title, 'source': f"r/{p['subreddit']}", 'detail': detail, 'url': p['url']})
+def classify_topic(title):
+    t = title.lower()
+    if any(w in t for w in ['job', 'employ', 'hired', 'fired', 'laid off', 'replac', 'automat', 'work']):
+        return 'job_threat'
+    if any(w in t for w in ['money', 'pay', 'wage', 'salary', 'debt', 'bill', 'financ', 'afford', 'cost', 'broke']):
+        return 'money'
+    if any(w in t for w in ['ai', 'chatgpt', 'robot', 'machine', 'tech', 'software', 'tool', 'gpt']):
+        return 'ai_tool'
+    if any(w in t for w in ['family', 'dad', 'father', 'kid', 'child', 'wife', 'parent']):
+        return 'family'
+    if any(w in t for w in ['health', 'body', 'injur', 'pain', 'doctor', 'medical', 'physic']):
+        return 'body'
+    return 'general'
 
+# Maps each topic type to a proven hook pattern for Charlie's audience
+HOOK_BY_TYPE = {
+    'job_threat': [
+        "They're not going to tell you this at work. But I will.",
+        "I asked AI what jobs are gone in 5 years. The answer will piss you off.",
+        "Your foreman knows this is coming. Your company knows. Do you?",
+        "The guys who keep their jobs through this aren't the smartest. They're the most prepared.",
+        "I'm not here to scare you. But if you're in the trades and you're not paying attention, someone else is.",
+    ],
+    'money': [
+        "They write these things to confuse you on purpose. AI read it in 30 seconds.",
+        "I gave AI my last three bills and asked it to find the overcharges. Watch what it found.",
+        "You work too hard for them to take that much. Here's how AI helps you keep more of it.",
+        "Your company has attorneys reviewing everything. You have Google. That's not a fair fight.",
+        "I used AI to read a contract that was designed to screw my family. Here's what it found.",
+    ],
+    'ai_tool': [
+        "I know you think this isn't for you. I thought the same thing.",
+        "You've already used AI. You just didn't know what it could actually do for you.",
+        "This isn't for tech guys. This is for guys who work and need things done.",
+        "I'm going to show you one thing you can do with AI today that will save you an hour this week.",
+        "Guys in the office are using this to do in 10 minutes what takes you a day. That's the problem.",
+    ],
+    'family': [
+        "Everything I do is for them. That's why I started learning this.",
+        "My kids aren't going to inherit my back problems. That's the whole point.",
+        "Your family doesn't need you to be a tech guy. They need you to not be the last to know.",
+        "I work with my hands. My backup plan is my brain. AI is how I'm building it.",
+        "The scariest day isn't retirement. It's the day your body says stop before you're ready.",
+    ],
+    'body': [
+        "Your body has a retirement date. AI doesn't. That's the whole conversation.",
+        "I watched guys I know get hurt and have nothing to fall back on. I'm not doing that.",
+        "You can't lift forever. You know that. What's the plan when you can't?",
+        "The trades will always need guys. But the guys who last are the ones who work smarter.",
+        "I started learning this because I don't want to be the guy who had no backup.",
+    ],
+    'general': [
+        "Nobody's telling blue collar guys about this. Here's what you need to know.",
+        "I'm just a guy who works with his hands. This is what I figured out.",
+        "They built this for tech people. I'm showing you how to use it for real life.",
+        "This took me 10 minutes to learn and it's already saved me more than that.",
+        "If you're a working dad and you're not using AI yet, this is where you start.",
+    ],
+}
+
+WHAT_TO_SHOW = {
+    'job_threat': "Pull up a news article about it on your phone. Read one line out loud. Then say: \"Here's what that actually means for guys who work with their hands.\" No script needed — just react honestly.",
+    'money': "Open ChatGPT on screen. Paste in a bill, a contract clause, or a fine print paragraph. Ask it to explain it like you're not a lawyer. Show the answer. That's the whole video.",
+    'ai_tool': "Do one real thing with AI on camera. Don't explain it first — just do it, then explain what just happened. Guys need to see the result before they believe the tool is real.",
+    'family': "Talk to the camera like you're talking to a buddy at a job site. No script. What does this mean for your family? Why does it matter to you personally? That's the whole video.",
+    'body': "Talk directly to camera. What's your backup plan? When did you start thinking about it? Be honest. Guys in the trades feel this but nobody's saying it out loud — you saying it is the video.",
+}
+
+WHY_THIS_MATTERS = {
+    'job_threat': "Blue collar workers are the most worried about AI replacing them — and the least informed about how to respond. That gap is your content.",
+    'money': "Your audience is getting overcharged, underprotected, and confused by paperwork designed to confuse them. AI is the equalizer. That's your whole brand.",
+    'ai_tool': "\"AI is not for guys like me\" is the #1 barrier your audience has. Every time you break that belief, you earn their trust and their follow.",
+    'family': "Working dads don't want content about hustle or grinding. They want to protect what they've built. Lead with that and you own the room.",
+    'body': "This is the core fear your audience won't say out loud. Body breaks down, no backup plan, family suffers. You naming it is the most powerful thing you can do.",
+    'general': "This touches something your audience is already thinking about. Your job is to connect it to their real life — trades, family, money — in plain language.",
+}
+
+def build_recommendations(posts, trends_data):
+    # Score and sort reddit posts by relevance to blue collar dad
+    scored = [(relevance_score(p['title']), p) for p in posts]
+    scored.sort(key=lambda x: x[0], reverse=True)
+    top_posts = [p for _, p in scored[:12]]
+
+    # Pull in rising trend topics as additional candidates
+    trend_topics = []
     if trends_data.get('rising'):
-        for kw in trends_data['rising'][:3]:
-            topics.append({'topic': kw, 'source': 'Google Trends', 'detail': 'Rising search this week', 'url': f"https://trends.google.com/trends/explore?q={kw.replace(' ','+')}&geo=US"})
+        for kw in trends_data['rising'][:4]:
+            trend_topics.append({'title': kw, 'url': f"https://trends.google.com/trends/explore?q={kw.replace(' ','+')}&geo=US", 'subreddit': 'Google Trends'})
 
-    # Fallback: use main trend keywords if still no topics
-    if not topics and trends_data.get('trends'):
-        for t in trends_data['trends'][:5]:
-            topics.append({'topic': t['keyword'], 'source': 'Google Trends', 'detail': f"Interest score: {t['interest']}", 'url': f"https://trends.google.com/trends/explore?q={t['keyword'].replace(' ','+')}&geo=US"})
+    # Combine — reddit first (real conversation), then trends
+    candidates = top_posts + trend_topics
 
-    # Last resort fallback topics so cards are never empty
-    if not topics:
-        fallback_topics = [
-            ("AI tools for blue collar workers", "https://www.reddit.com/r/artificial/top"),
-            ("How ChatGPT is changing trade jobs", "https://www.reddit.com/r/ChatGPT/top"),
-            ("Automation and the skilled trades", "https://www.reddit.com/r/BlueCollar/top"),
-            ("Financial tips for working dads", "https://www.reddit.com/r/personalfinance/top"),
-            ("AI replacing workers — what's real", "https://www.reddit.com/r/technology/top"),
-        ]
-        for title, url in fallback_topics:
-            topics.append({'topic': title, 'source': 'Evergreen Topic', 'detail': 'Always relevant to your audience', 'url': url})
+    # Fallback pool if Reddit blocked entirely
+    fallback = [
+        {'title': 'AI tools are replacing workers across major industries in 2025', 'url': 'https://reddit.com/r/technology', 'subreddit': 'Evergreen'},
+        {'title': 'How to use ChatGPT to read a contract or legal document', 'url': 'https://reddit.com/r/ChatGPT', 'subreddit': 'Evergreen'},
+        {'title': 'Blue collar workers: what skills are actually safe from automation?', 'url': 'https://reddit.com/r/BlueCollar', 'subreddit': 'Evergreen'},
+        {'title': 'I was overcharged on my medical bill — here is how I fought back', 'url': 'https://reddit.com/r/personalfinance', 'subreddit': 'Evergreen'},
+        {'title': 'What happens to working dads when their body gives out too early', 'url': 'https://reddit.com/r/Dads', 'subreddit': 'Evergreen'},
+    ]
+    if not candidates:
+        candidates = fallback
 
-    used_hooks = []
-    for i, t in enumerate(topics[:5]):
-        available = [h for h in HOOK_TEMPLATES if h not in used_hooks]
-        hook = random.choice(available)
-        used_hooks.append(hook)
-        hook_text = hook.replace('[TOPIC]', t['topic'].lower().rstrip('.').rstrip('?'))
-        cards.append({
-            'n': i + 1,
-            'topic': t['topic'],
-            'hook': hook_text,
-            'angle': spin(t['topic']),
-            'source': t['source'],
-            'detail': t['detail'],
-            'url': t['url'],
+    used_topics = set()
+    used_hooks = set()
+    recs = []
+
+    for p in candidates:
+        if len(recs) >= 3:
+            break
+        title = p['title']
+        if title in used_topics:
+            continue
+        used_topics.add(title)
+
+        topic_type = classify_topic(title)
+        available_hooks = [h for h in HOOK_BY_TYPE[topic_type] if h not in used_hooks]
+        if not available_hooks:
+            available_hooks = HOOK_BY_TYPE[topic_type]
+        hook = random.choice(available_hooks)
+        used_hooks.add(hook)
+
+        short_title = title if len(title) <= 75 else title[:72] + '...'
+        source = p['subreddit']
+        if source not in ('Google Trends', 'Evergreen'):
+            source = f"r/{source}"
+
+        recs.append({
+            'n': len(recs) + 1,
+            'title': short_title,
+            'source': source,
+            'topic_type': topic_type,
+            'hook': hook,
+            'what_to_show': WHAT_TO_SHOW[topic_type],
+            'why': WHY_THIS_MATTERS[topic_type],
+            'url': p['url'],
         })
-    return cards
+
+    # If we got fewer than 3, fill from fallback
+    if len(recs) < 3:
+        for p in fallback:
+            if len(recs) >= 3:
+                break
+            if p['title'] in used_topics:
+                continue
+            used_topics.add(p['title'])
+            topic_type = classify_topic(p['title'])
+            hook = random.choice(HOOK_BY_TYPE[topic_type])
+            recs.append({
+                'n': len(recs) + 1,
+                'title': p['title'],
+                'source': 'Evergreen Topic',
+                'topic_type': topic_type,
+                'hook': hook,
+                'what_to_show': WHAT_TO_SHOW[topic_type],
+                'why': WHY_THIS_MATTERS[topic_type],
+                'url': p['url'],
+            })
+
+    return recs
 
 # ─── HTML ─────────────────────────────────────────────────────────────────────
 
-def build_html(cards, posts, trends_data, youtube_videos):
+TYPE_LABELS = {
+    'job_threat': 'JOB THREAT',
+    'money': 'MONEY & FINE PRINT',
+    'ai_tool': 'AI DEMO',
+    'family': 'FAMILY PROTECTION',
+    'body': 'BODY & BACKUP PLAN',
+    'general': 'AUDIENCE INSIGHT',
+}
+
+def build_html(recs, trends_data):
     now = datetime.now()
     date_str = now.strftime("%A, %B %d, %Y")
     time_str = now.strftime("%I:%M %p UTC")
 
-    def cards_html():
-        if not cards:
-            return '<div class="muted" style="font-size:13px;padding:12px">No topics today — check back tomorrow.</div>'
+    # Top trend data for the "What your guys are searching" strip
+    top_trend = trends_data['trends'][0] if trends_data.get('trends') else None
+    top_trend_line = ''
+    if top_trend:
+        top_trend_line = f'<div class="pulse-bar">This week\'s top search from your audience: <strong>"{top_trend["keyword"]}"</strong> — interest score {top_trend["interest"]} out of 100. That\'s the temperature of your market right now.</div>'
+
+    rising_line = ''
+    if trends_data.get('rising'):
+        keywords = ', '.join(f'"{k}"' for k in trends_data['rising'][:4])
+        rising_line = f'<div class="pulse-bar" style="margin-top:10px">Rising searches this week: {keywords}. These are the words your audience is using — mirror them in your hooks.</div>'
+
+    def rec_cards():
         out = ''
-        for c in cards:
+        for r in recs:
+            type_label = TYPE_LABELS.get(r['topic_type'], 'TOPIC')
             out += f'''
-<div class="card">
-  <div class="card-num">#{c['n']}</div>
-  <div class="card-source">{c['source']} &middot; {c['detail']}</div>
-  <div class="card-topic">{c['topic']}</div>
-  <div class="card-block">
-    <div class="label">HOOK — say this first</div>
-    <div class="hook">&ldquo;{c['hook']}&rdquo;</div>
+<div class="rec-card">
+  <div class="rec-header">
+    <span class="rec-num">VIDEO {r['n']}</span>
+    <span class="rec-type">{type_label}</span>
+    <span class="rec-source">Source: {r['source']}</span>
   </div>
-  <div class="card-block">
-    <div class="label">YOUR ANGLE</div>
-    <div class="body">{c['angle']}</div>
+  <div class="rec-trigger">What's happening out there: <em>{r['title']}</em></div>
+  <div class="rec-section">
+    <div class="rec-label">OPEN WITH THIS</div>
+    <div class="rec-hook">"{r['hook']}"</div>
   </div>
-  <div class="card-block">
-    <div class="label">CLOSE WITH</div>
-    <div class="body muted">Follow for more — I built something free for guys like you. Link in bio.</div>
+  <div class="rec-section">
+    <div class="rec-label">WHAT TO DO ON CAMERA</div>
+    <div class="rec-body">{r['what_to_show']}</div>
   </div>
-  <a href="{c['url']}" target="_blank" class="src-link">View source &rarr;</a>
+  <div class="rec-section">
+    <div class="rec-label">WHY THIS HITS FOR YOUR GUYS</div>
+    <div class="rec-body rec-why">{r['why']}</div>
+  </div>
+  <div class="rec-section">
+    <div class="rec-label">CLOSE EVERY VIDEO WITH</div>
+    <div class="rec-body rec-close">"Follow for more — I built something free for guys like you. Link in bio."</div>
+  </div>
+  <a href="{r['url']}" target="_blank" class="rec-link">See what sparked this &rarr;</a>
 </div>'''
         return out
-
-    def trending_html():
-        if not posts:
-            return '<div class="muted" style="font-size:13px;padding:12px">Reddit data unavailable today.</div>'
-        out = ''
-        for p in posts[:10]:
-            score_display = f"{p['score']:,}" if p['score'] != 100 else '▲'
-            meta = f"r/{p['subreddit']}"
-            if p['comments']:
-                meta += f" &middot; {p['comments']:,} comments"
-            out += f'''
-<a href="{p['url']}" target="_blank" class="trend-row">
-  <div class="trend-score">{score_display}</div>
-  <div>
-    <div class="trend-title">{p['title']}</div>
-    <div class="trend-meta">{meta}</div>
-  </div>
-</a>'''
-        return out
-
-    def youtube_html():
-        if not youtube_videos:
-            return '<div class="muted" style="font-size:13px;padding:12px">Add YOUTUBE_API_KEY as a GitHub secret to enable YouTube research.</div>'
-        out = ''
-        for v in youtube_videos[:6]:
-            out += f'''
-<a href="{v['url']}" target="_blank" class="trend-row">
-  <div class="trend-score" style="color:#ff4444;min-width:42px">&#9654;</div>
-  <div>
-    <div class="trend-title">{v['title']}</div>
-    <div class="trend-meta">{v['channel']} &middot; Search: {v['query']}</div>
-  </div>
-</a>'''
-        return out
-
-    def gtrends_html():
-        if not trends_data.get('trends'):
-            return '<div class="muted" style="font-size:13px">Google Trends data unavailable — check back tomorrow.</div>'
-        out = ''
-        for t in trends_data['trends']:
-            w = min(100, int(t['interest']))
-            out += f'''
-<div class="grow">
-  <div class="gkw">{t['keyword']}</div>
-  <div class="gbar-bg"><div class="gbar" style="width:{w}%"></div></div>
-  <div class="gscore">{t['interest']}</div>
-</div>'''
-        return out
-
-    def rising_html():
-        if not trends_data.get('rising'):
-            return ''
-        out = ''
-        for kw in trends_data['rising']:
-            out += f'<span class="tag">{kw}</span>'
-        return out
-
-    yt_section = ''
-    if youtube_videos or not YOUTUBE_API_KEY:
-        yt_section = f'''
-  <div class="sec">
-    <div class="sec-title">What's Getting Views on YouTube</div>
-    {youtube_html()}
-  </div>'''
 
     return f'''<!DOCTYPE html>
 <html lang="en">
@@ -356,57 +337,51 @@ def build_html(cards, posts, trends_data, youtube_videos):
 <title>NexGen Content Engine</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{{--bg:#0D0D0D;--s:#161616;--s2:#1e1e1e;--o:#E8700A;--od:rgba(232,112,10,0.12);--t:#e8e8e8;--m:#888;--b:#2a2a2a}}
+:root{{--bg:#0D0D0D;--s:#161616;--s2:#1e1e1e;--o:#E8700A;--od:rgba(232,112,10,0.10);--t:#e8e8e8;--m:#888;--b:#2a2a2a;--g:#2a3a1a;--go:#5a9a2a}}
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{background:var(--bg);color:var(--t);font-family:'Inter',sans-serif;min-height:100vh}}
 a{{color:inherit;text-decoration:none}}
 
-.header{{background:var(--s);border-bottom:1px solid var(--b);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99}}
+.header{{background:var(--s);border-bottom:2px solid var(--o);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99}}
 .logo{{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700}}.logo span{{color:var(--o)}}
 .hdate{{font-size:12px;color:var(--m)}}
 .badge{{background:var(--o);color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:1px}}
 
-.wrap{{max-width:860px;margin:0 auto;padding:24px 16px}}
-.sec{{margin-bottom:40px}}
-.sec-title{{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;color:var(--o);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px}}
-.sec-title::after{{content:'';flex:1;height:1px;background:var(--b)}}
+.wrap{{max-width:820px;margin:0 auto;padding:28px 16px}}
 
-.card{{background:var(--s);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:6px;padding:20px;margin-bottom:14px;position:relative}}
-.card-num{{position:absolute;top:-11px;left:14px;background:var(--o);color:#fff;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;padding:2px 10px;border-radius:20px}}
-.card-source{{font-size:11px;color:var(--m);letter-spacing:1px;text-transform:uppercase;margin-top:8px;margin-bottom:10px}}
-.card-topic{{font-family:'Oswald',sans-serif;font-size:19px;font-weight:600;line-height:1.3;margin-bottom:16px}}
-.card-block{{margin-bottom:12px}}
-.label{{font-size:10px;font-weight:600;color:var(--o);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}}
-.hook{{font-size:15px;font-style:italic;line-height:1.5;background:var(--od);padding:12px;border-radius:4px}}
-.body{{font-size:14px;color:#ccc;line-height:1.5}}
-.muted{{color:var(--m)}}
-.src-link{{display:inline-block;margin-top:10px;font-size:12px;color:var(--o)}}
-.src-link:hover{{text-decoration:underline}}
+.pulse-bar{{background:var(--s);border-left:3px solid var(--o);padding:12px 16px;border-radius:0 6px 6px 0;font-size:13px;color:#ccc;line-height:1.5}}
+.pulse-bar strong{{color:var(--o)}}
 
-.trend-row{{display:flex;align-items:flex-start;gap:14px;padding:12px;background:var(--s);border:1px solid var(--b);border-radius:6px;margin-bottom:8px;transition:border-color 0.2s}}
-.trend-row:hover{{border-color:var(--o)}}
-.trend-score{{font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:var(--o);min-width:52px;text-align:right;flex-shrink:0}}
-.trend-title{{font-size:14px;line-height:1.4;margin-bottom:3px}}
-.trend-meta{{font-size:11px;color:var(--m)}}
+.section-label{{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;color:var(--o);letter-spacing:2.5px;text-transform:uppercase;margin:36px 0 16px;display:flex;align-items:center;gap:10px}}
+.section-label::after{{content:'';flex:1;height:1px;background:var(--b)}}
 
-.grow{{display:flex;align-items:center;gap:12px;margin-bottom:10px}}
-.gkw{{font-size:13px;min-width:160px;color:var(--t)}}
-.gbar-bg{{flex:1;background:var(--s2);border-radius:2px;height:6px}}
-.gbar{{background:var(--o);height:6px;border-radius:2px}}
-.gscore{{font-size:12px;color:var(--m);min-width:28px;text-align:right}}
+.rec-card{{background:var(--s);border:1px solid var(--b);border-radius:8px;padding:0;margin-bottom:20px;overflow:hidden}}
+.rec-header{{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--s2);border-bottom:1px solid var(--b);flex-wrap:wrap}}
+.rec-num{{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;color:#fff;background:var(--o);padding:3px 10px;border-radius:20px}}
+.rec-type{{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;color:var(--o);letter-spacing:1.5px;text-transform:uppercase}}
+.rec-source{{font-size:11px;color:var(--m);margin-left:auto}}
+.rec-trigger{{padding:14px 16px 10px;font-size:13px;color:var(--m);border-bottom:1px solid var(--b)}}
+.rec-trigger em{{color:#bbb;font-style:normal}}
 
-.tags{{display:flex;flex-wrap:wrap;gap:8px}}
-.tag{{background:var(--od);border:1px solid var(--o);color:var(--o);font-size:12px;padding:4px 12px;border-radius:20px}}
+.rec-section{{padding:14px 16px;border-bottom:1px solid var(--b)}}
+.rec-section:last-of-type{{border-bottom:none}}
+.rec-label{{font-size:10px;font-weight:600;color:var(--o);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}}
+.rec-hook{{font-size:17px;font-style:italic;line-height:1.5;background:var(--od);border-left:3px solid var(--o);padding:12px 14px;border-radius:0 4px 4px 0;color:#fff}}
+.rec-body{{font-size:14px;color:#ccc;line-height:1.6}}
+.rec-why{{color:#bbb;font-size:13px}}
+.rec-close{{color:var(--m);font-size:13px;font-style:italic}}
+.rec-link{{display:block;padding:10px 16px;font-size:12px;color:var(--o);background:var(--s2);border-top:1px solid var(--b)}}
+.rec-link:hover{{text-decoration:underline}}
 
-.influencer-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}}
-.inf-card{{background:var(--s);border:1px solid var(--b);border-radius:6px;padding:14px}}
-.inf-name{{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;margin-bottom:4px}}
-.inf-niche{{font-size:12px;color:var(--o);margin-bottom:8px}}
-.inf-tip{{font-size:12px;color:var(--m);line-height:1.4}}
+.trend-strip{{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}}
+.trend-pill{{background:var(--s2);border:1px solid var(--b);border-radius:20px;padding:6px 14px;font-size:12px;display:flex;align-items:center;gap:8px}}
+.trend-pill .kw{{color:var(--t)}}
+.trend-pill .score{{color:var(--o);font-family:'Oswald',sans-serif;font-weight:700}}
+.trend-pill.hot{{border-color:var(--o)}}
 
-.footer{{text-align:center;padding:24px;font-size:12px;color:var(--m);border-top:1px solid var(--b);margin-top:20px}}
+.footer{{text-align:center;padding:28px;font-size:12px;color:var(--m);border-top:1px solid var(--b);margin-top:16px}}
 
-@media(max-width:600px){{.gkw{{min-width:110px;font-size:12px}}.card-topic{{font-size:16px}}.influencer-grid{{grid-template-columns:1fr}}}}
+@media(max-width:600px){{.rec-hook{{font-size:15px}}.rec-header{{gap:6px}}}}
 </style>
 </head>
 <body>
@@ -419,40 +394,19 @@ a{{color:inherit;text-decoration:none}}
 
 <div class="wrap">
 
-  <div class="sec">
-    <div class="sec-title">Record This Now</div>
-    {cards_html()}
-  </div>
+  <div class="section-label">What your audience is feeling right now</div>
+  {top_trend_line}
+  {rising_line}
 
-  <div class="sec">
-    <div class="sec-title">Trending In Your Space This Week</div>
-    {trending_html()}
-  </div>
+  <div class="section-label">Record one of these today</div>
+  {rec_cards()}
 
-  {yt_section}
-
-  <div class="sec">
-    <div class="sec-title">AI &amp; Work — Google Trends</div>
-    {gtrends_html()}
-  </div>
-
-  {'<div class="sec"><div class="sec-title">Rising Searches This Week</div><div class="tags">' + rising_html() + '</div></div>' if trends_data.get('rising') else ''}
-
-  <div class="sec">
-    <div class="sec-title">Adjacent Influencers — Watch These</div>
-    <div class="influencer-grid">
-      <div class="inf-card"><div class="inf-name">AI Educators</div><div class="inf-niche">AI for regular people</div><div class="inf-tip">Search YouTube: "AI tools for beginners 2025" — watch what hooks they open with and steal the angle, not the content.</div></div>
-      <div class="inf-card"><div class="inf-name">Blue Collar Creators</div><div class="inf-niche">Trades &amp; skilled work</div><div class="inf-tip">Search: "blue collar success story" on TikTok. Note what comment sections are saying — those are your hooks.</div></div>
-      <div class="inf-card"><div class="inf-name">Dad Content</div><div class="inf-niche">Fatherhood &amp; family</div><div class="inf-tip">Search: "working dad advice" on YouTube. Highest view counts tell you exactly what resonates with your audience.</div></div>
-      <div class="inf-card"><div class="inf-name">Personal Finance</div><div class="inf-niche">Money stress &amp; bills</div><div class="inf-tip">Search: "how to negotiate bills" or "reading your paycheck" — these are AI use cases your audience desperately needs.</div></div>
-      <div class="inf-card"><div class="inf-name">Anti-Work / Hustle</div><div class="inf-niche">Job frustration content</div><div class="inf-tip">r/antiwork top posts show exactly what blue collar workers are angry about. That anger is your content fuel.</div></div>
-    </div>
-  </div>
+  {'<div class="section-label">Search volume this week</div><div class="trend-strip">' + ''.join(f\'<div class="trend-pill{" hot" if t["interest"] > 5 else ""}"><span class="kw">{t["keyword"]}</span><span class="score">{t["interest"]}</span></div>\' for t in trends_data.get("trends", [])) + "</div>" if trends_data.get("trends") else ""}
 
 </div>
 
 <div class="footer">
-  NexGen Caveman Content Engine &middot; Updated {date_str} at {time_str} &middot; Built for Charlie
+  NexGen Caveman Content Engine &middot; {date_str} at {time_str} &middot; Built for Charlie
 </div>
 
 </body>
@@ -463,7 +417,7 @@ a{{color:inherit;text-decoration:none}}
 def main():
     print("NexGen Content Engine starting...")
 
-    print("Fetching Reddit (RSS)...")
+    print("Fetching Reddit...")
     posts = fetch_reddit(SUBREDDITS, limit=5)
     print(f"  {len(posts)} posts fetched")
 
@@ -471,22 +425,18 @@ def main():
     trends = fetch_trends()
     print(f"  {len(trends.get('trends', []))} trend keywords, {len(trends.get('rising', []))} rising")
 
-    print("Fetching YouTube...")
-    youtube = fetch_youtube(YOUTUBE_SEARCHES)
-    print(f"  {len(youtube)} YouTube videos fetched")
-
-    print("Building content cards...")
-    cards = build_cards(posts, trends)
-    print(f"  {len(cards)} cards generated")
+    print("Building recommendations...")
+    recs = build_recommendations(posts, trends)
+    print(f"  {len(recs)} video recommendations built")
 
     print("Generating HTML...")
-    html = build_html(cards, posts, trends, youtube)
+    html = build_html(recs, trends)
 
     os.makedirs('dashboard', exist_ok=True)
     with open('dashboard/index.html', 'w', encoding='utf-8') as f:
         f.write(html)
 
-    print("Done. dashboard/index.html generated.")
+    print(f"Done. {len(recs)} recommendations generated.")
 
 if __name__ == '__main__':
     main()
