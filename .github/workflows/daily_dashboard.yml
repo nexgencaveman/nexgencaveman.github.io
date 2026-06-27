@@ -1,0 +1,35 @@
+name: Daily Content Dashboard
+
+on:
+  schedule:
+    - cron: '0 10 * * *'   # 10am UTC = 6am ET every morning
+  workflow_dispatch:        # Manual trigger from GitHub Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate dashboard
+        run: python scripts/generate_dashboard.py
+
+      - name: Commit and push dashboard
+        run: |
+          git config --global user.name 'NexGen Content Bot'
+          git config --global user.email 'nexgencaveman@gmail.com'
+          git add dashboard/index.html
+          git diff --staged --quiet || git commit -m "Content dashboard update $(date '+%Y-%m-%d')"
+          git push
