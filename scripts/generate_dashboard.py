@@ -21,9 +21,17 @@ except ImportError:
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 
 SUBREDDITS = [
-    'artificial', 'ChatGPT', 'technology', 'Futurology',
-    'Construction', 'electricians', 'HVAC', 'Welding', 'Plumbing', 'carpentry', 'Truckers', 'BlueCollar',
-    'daddit', 'Dads', 'personalfinance', 'povertyfinance', 'antiwork', 'jobs', 'financialindependence',
+    # Trades & blue collar — primary audience
+    'Construction', 'electricians', 'HVAC', 'Welding', 'Plumbing', 'carpentry',
+    'Truckers', 'BlueCollar', 'tradeswork', 'manufacturing',
+    # Working dads & family stress
+    'daddit', 'Dads', 'workingdads',
+    # Money stress — paycheck to paycheck, not investing
+    'personalfinance', 'povertyfinance', 'Frugal', 'survivinginflatoin',
+    # Job fear & frustration
+    'antiwork', 'jobs', 'layoffs', 'Unemployed',
+    # AI topics written for regular people, not developers
+    'ChatGPT', 'artificial',
 ]
 
 TREND_KEYWORDS = [
@@ -38,13 +46,13 @@ YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY', '')
 
 # What your audience is actually searching and watching on YouTube
 YOUTUBE_SEARCHES = [
-    'AI tools for workers',
-    'blue collar automation 2025',
-    'ChatGPT real life use',
-    'AI replace blue collar jobs',
-    'working dad financial tips',
-    'how to use AI to save money',
-    'trade jobs and technology',
+    'AI tools for blue collar workers',
+    'trades jobs automation threat',
+    'working dad struggling financially',
+    'how to use ChatGPT to save money',
+    'AI replacing construction electrician plumber',
+    'blue collar dad side income',
+    'how regular people use AI',
 ]
 
 # ─── DATA FETCHING ────────────────────────────────────────────────────────────
@@ -155,6 +163,21 @@ def fetch_trends():
         return {'trends': [], 'rising': []}
 
 # ─── RECOMMENDATION ENGINE ────────────────────────────────────────────────────
+
+# Topics that belong to office workers, developers, or startup culture — reject these
+OFFICE_GUY_FILTERS = [
+    'developer', 'software engineer', 'coder', 'coding', 'programmer', 'programming',
+    'startup', 'founder', 'venture', 'vc ', 'saas', 'api ', 'llm', 'model weights',
+    'open source', 'github', 'pull request', 'machine learning', 'neural network',
+    'data science', 'prompt engineering', 'fine-tun', 'training data',
+    'white collar', 'remote work', 'work from home', 'wfh', 'corporate ladder',
+    'stock options', 'equity', 'ipo', 'crypto', 'nft', 'web3', 'blockchain',
+    'mba', 'linkedin', 'networking event', 'conference', 'keynote',
+]
+
+def is_office_content(title):
+    t = title.lower()
+    return any(w in t for w in OFFICE_GUY_FILTERS)
 
 # Every topic is scored by how relevant it is to a blue collar dad
 BLUE_COLLAR_SIGNALS = [
@@ -275,13 +298,13 @@ def build_recommendations(posts, trends_data, youtube_videos):
     # Combine — reddit (what they're saying) + youtube (what they're watching) + trends (what they're searching)
     candidates = top_posts + yt_topics + trend_topics
 
-    # Fallback pool if Reddit blocked entirely
+    # Fallback pool — always blue collar dad, always on-target
     fallback = [
-        {'title': 'AI tools are replacing workers across major industries in 2025', 'url': 'https://reddit.com/r/technology', 'subreddit': 'Evergreen'},
-        {'title': 'How to use ChatGPT to read a contract or legal document', 'url': 'https://reddit.com/r/ChatGPT', 'subreddit': 'Evergreen'},
-        {'title': 'Blue collar workers: what skills are actually safe from automation?', 'url': 'https://reddit.com/r/BlueCollar', 'subreddit': 'Evergreen'},
-        {'title': 'I was overcharged on my medical bill — here is how I fought back', 'url': 'https://reddit.com/r/personalfinance', 'subreddit': 'Evergreen'},
-        {'title': 'What happens to working dads when their body gives out too early', 'url': 'https://reddit.com/r/Dads', 'subreddit': 'Evergreen'},
+        {'title': 'Tradesmen: what happens to your income when your body breaks down?', 'url': 'https://reddit.com/r/BlueCollar', 'subreddit': 'Evergreen'},
+        {'title': 'AI is coming for overtime — what blue collar workers need to know now', 'url': 'https://reddit.com/r/antiwork', 'subreddit': 'Evergreen'},
+        {'title': 'Working dad living paycheck to paycheck — what actually changes things', 'url': 'https://reddit.com/r/povertyfinance', 'subreddit': 'Evergreen'},
+        {'title': 'Construction and trades workers on automation: what are you actually worried about?', 'url': 'https://reddit.com/r/Construction', 'subreddit': 'Evergreen'},
+        {'title': 'How do you explain to your kids why you work so much and still struggle', 'url': 'https://reddit.com/r/daddit', 'subreddit': 'Evergreen'},
     ]
     if not candidates:
         candidates = fallback
@@ -295,6 +318,10 @@ def build_recommendations(posts, trends_data, youtube_videos):
             break
         title = p['title']
         if title in used_topics:
+            continue
+        # Hard reject — office/developer content has no place here
+        if is_office_content(title):
+            print(f"  Filtered (office content): {title[:60]}")
             continue
         used_topics.add(title)
 
