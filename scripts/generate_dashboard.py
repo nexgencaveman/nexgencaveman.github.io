@@ -47,12 +47,17 @@ YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY', '')
 # What your audience is actually searching and watching on YouTube
 YOUTUBE_SEARCHES = [
     'AI tools for blue collar workers',
-    'trades jobs automation threat',
+    'trades jobs automation threat 2025',
     'working dad struggling financially',
     'how to use ChatGPT to save money',
-    'AI replacing construction electrician plumber',
-    'blue collar dad side income',
+    'AI replacing electrician plumber construction',
+    'blue collar dad financial tips',
     'how regular people use AI',
+    'what happens when you cant work anymore trades',
+    'electrician plumber HVAC AI automation',
+    'truck driver automation job loss',
+    'working class AI tools real life',
+    'dad working paycheck to paycheck advice',
 ]
 
 # ─── DATA FETCHING ────────────────────────────────────────────────────────────
@@ -111,7 +116,7 @@ def fetch_youtube():
                     'type': 'video',
                     'order': 'viewCount',
                     'publishedAfter': '2024-06-01T00:00:00Z',
-                    'maxResults': 3,
+                    'maxResults': 5,
                     'relevanceLanguage': 'en',
                     'regionCode': 'US',
                     'key': YOUTUBE_API_KEY,
@@ -134,7 +139,7 @@ def fetch_youtube():
             time.sleep(0.3)
         except Exception as e:
             print(f"  YouTube '{query}': {e}")
-    return videos[:12]
+    return videos[:20]
 
 
 def fetch_trends():
@@ -286,7 +291,7 @@ def build_recommendations(posts, trends_data, youtube_videos):
     # Pull in high-performing YouTube titles as topic candidates
     # If people are watching it, Charlie's audience wants it
     yt_topics = []
-    for v in youtube_videos[:6]:
+    for v in youtube_videos[:15]:
         yt_topics.append({'title': v['title'], 'url': v['url'], 'subreddit': f"YouTube · {v['channel']}"})
 
     # Pull in rising trend topics as additional candidates
@@ -295,8 +300,8 @@ def build_recommendations(posts, trends_data, youtube_videos):
         for kw in trends_data['rising'][:4]:
             trend_topics.append({'title': kw, 'url': f"https://trends.google.com/trends/explore?q={kw.replace(' ','+')}&geo=US", 'subreddit': 'Google Trends'})
 
-    # Combine — reddit (what they're saying) + youtube (what they're watching) + trends (what they're searching)
-    candidates = top_posts + yt_topics + trend_topics
+    # Priority: YouTube first (proven views = proven demand), then trends, then Reddit as backup
+    candidates = yt_topics + trend_topics + top_posts
 
     # Fallback pool — always blue collar dad, always on-target
     fallback = [
