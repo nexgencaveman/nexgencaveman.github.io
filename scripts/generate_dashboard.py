@@ -9,6 +9,7 @@ import json
 import random
 import os
 import time
+import xml.etree.ElementTree as ET
 from datetime import datetime
 
 try:
@@ -36,6 +37,16 @@ TREND_KEYWORDS = [
     'AI replace workers',
 ]
 
+YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY', '')
+
+YOUTUBE_SEARCHES = [
+    'AI tools for workers 2025',
+    'blue collar AI automation',
+    'ChatGPT for regular people',
+    'AI replace jobs blue collar',
+    'working dad financial tips',
+]
+
 HOOK_TEMPLATES = [
     "Nobody's telling blue collar guys about [TOPIC]. Here's what you need to know.",
     "Your employer already knows [TOPIC] is coming. Do you?",
@@ -49,38 +60,103 @@ HOOK_TEMPLATES = [
     "My boss knows about [TOPIC]. Your boss does too. Do you?",
 ]
 
-INFLUENCERS = [
-    {'name': 'AI Explained', 'search': 'AI explained simply tools workers', 'niche': 'AI for regular people'},
-    {'name': 'Matt Wolfe', 'search': 'AI tools productivity Matt Wolfe', 'niche': 'AI tools'},
-    {'name': 'Mike Rowe', 'search': 'Mike Rowe blue collar skilled trades', 'niche': 'Blue collar advocate'},
-    {'name': 'Graham Stephan', 'search': 'Graham Stephan money finance tips', 'niche': 'Personal finance'},
-    {'name': 'Dad content creators', 'search': 'dad life real talk working father', 'niche': 'Dad content'},
-]
-
-# ─── REDDIT ───────────────────────────────────────────────────────────────────
+# ─── REDDIT (RSS fallback — works from GitHub Actions) ────────────────────────
 
 def fetch_reddit(subreddits, limit=5):
     posts = []
-    headers = {'User-Agent': 'NexGenCavemanBot/1.0 (content research tool)'}
     for sub in subreddits:
+        # Use RSS feed — no auth needed, not blocked by AWS IPs
         try:
-            url = f'https://www.reddit.com/r/{sub}/top.json?t=week&limit={limit}'
-            r = requests.get(url, headers=headers, timeout=10)
+            url = f'https://www.reddit.com/r/{sub}/top.rss?t=week&limit={limit}'
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (compatible; NexGenCavemanBot/1.0)',
+                'Accept': 'application/rss+xml, application/xml, text/xml',
+            }
+            r = requests.get(url, headers=headers, timeout=15)
             if r.status_code == 200:
-                for item in r.json()['data']['children']:
-                    p = item['data']
-                    if p.get('score', 0) > 50 and not p.get('is_self', True) or p.get('selftext', ''):
+                root = ET.fromstring(r.content)
+                ns = {'atom': 'http://www.w3.org/2005/Atom'}
+                entries = root.findall('.//atom:entry', ns)
+                for entry in entries[:limit]:
+                    title_el = entry.find('atom:title', ns)
+                    link_el = entry.find('atom:link', ns)
+                    content_el = entry.find('atom:content', ns)
+                    if title_el is None:
+                        continue
+                    title = title_el.text or ''
+                    url_post = link_el.get('href', '') if link_el is not None else ''
+                    # Parse upvotes from content if available
+                    score = 100  # RSS doesn't give scores, use placeholder
+                    posts.append({
+                        'title': title,
+                        'score': score,
+                        'comments': 0,
+                        'url': url_post,
+                        'subreddit': sub,
+                    })
+            time.sleep(0.5)
+        except Exception as e:
+            print(f"  Reddit r/{sub} RSS: {e}")
+            # Try JSON API as fallback
+            try:
+                url2 = f'https://www.reddit.com/r/{sub}/top.json?t=week&limit={limit}'
+                headers2 = {'User-Agent': 'NexGenCavemanBot/1.0'}
+                r2 = requests.get(url2, headers=headers2, timeout=10)
+                if r2.status_code == 200:
+                    for item in r2.json().get('data', {}).get('children', []):
+                        p = item['data']
                         posts.append({
                             'title': p['title'],
-                            'score': p['score'],
-                            'comments': p['num_comments'],
+                            'score': p.get('score', 100),
+                            'comments': p.get('num_comments', 0),
                             'url': f"https://reddit.com{p['permalink']}",
                             'subreddit': sub,
                         })
-            time.sleep(0.8)
+            except Exception as e2:
+                print(f"  Reddit r/{sub} JSON also failed: {e2}")
+    # Deduplicate by title
+    seen = set()
+    unique = []
+    for p in posts:
+        if p['title'] not in seen and len(p['title']) > 10:
+            seen.add(p['title'])
+            unique.append(p)
+    return unique[:30]
+
+# ─── YOUTUBE ──────────────────────────────────────────────────────────────────
+
+def fetch_youtube(searches):
+    if not YOUTUBE_API_KEY:
+        print("  YouTube API key not set — skipping")
+        return []
+    videos = []
+    for query in searches[:3]:
+        try:
+            url = 'https://www.googleapis.com/youtube/v3/search'
+            params = {
+                'part': 'snippet',
+                'q': query,
+                'type': 'video',
+                'order': 'viewCount',
+                'publishedAfter': '2025-01-01T00:00:00Z',
+                'maxResults': 3,
+                'key': YOUTUBE_API_KEY,
+            }
+            r = requests.get(url, params=params, timeout=10)
+            if r.status_code == 200:
+                for item in r.json().get('items', []):
+                    snippet = item['snippet']
+                    vid_id = item['id']['videoId']
+                    videos.append({
+                        'title': snippet['title'],
+                        'channel': snippet['channelTitle'],
+                        'url': f"https://www.youtube.com/watch?v={vid_id}",
+                        'query': query,
+                    })
+            time.sleep(0.3)
         except Exception as e:
-            print(f"  Reddit r/{sub}: {e}")
-    return sorted(posts, key=lambda x: x['score'], reverse=True)
+            print(f"  YouTube search '{query}': {e}")
+    return videos
 
 # ─── GOOGLE TRENDS ────────────────────────────────────────────────────────────
 
@@ -134,11 +210,29 @@ def build_cards(posts, trends_data):
 
     for p in posts[:8]:
         title = p['title'] if len(p['title']) <= 70 else p['title'][:67] + '...'
-        topics.append({'topic': title, 'source': f"r/{p['subreddit']}", 'detail': f"{p['score']:,} upvotes · {p['comments']:,} comments", 'url': p['url']})
+        detail = f"{p['score']:,} upvotes" if p['comments'] == 0 else f"{p['score']:,} upvotes · {p['comments']:,} comments"
+        topics.append({'topic': title, 'source': f"r/{p['subreddit']}", 'detail': detail, 'url': p['url']})
 
     if trends_data.get('rising'):
         for kw in trends_data['rising'][:3]:
             topics.append({'topic': kw, 'source': 'Google Trends', 'detail': 'Rising search this week', 'url': f"https://trends.google.com/trends/explore?q={kw.replace(' ','+')}&geo=US"})
+
+    # Fallback: use main trend keywords if still no topics
+    if not topics and trends_data.get('trends'):
+        for t in trends_data['trends'][:5]:
+            topics.append({'topic': t['keyword'], 'source': 'Google Trends', 'detail': f"Interest score: {t['interest']}", 'url': f"https://trends.google.com/trends/explore?q={t['keyword'].replace(' ','+')}&geo=US"})
+
+    # Last resort fallback topics so cards are never empty
+    if not topics:
+        fallback_topics = [
+            ("AI tools for blue collar workers", "https://www.reddit.com/r/artificial/top"),
+            ("How ChatGPT is changing trade jobs", "https://www.reddit.com/r/ChatGPT/top"),
+            ("Automation and the skilled trades", "https://www.reddit.com/r/BlueCollar/top"),
+            ("Financial tips for working dads", "https://www.reddit.com/r/personalfinance/top"),
+            ("AI replacing workers — what's real", "https://www.reddit.com/r/technology/top"),
+        ]
+        for title, url in fallback_topics:
+            topics.append({'topic': title, 'source': 'Evergreen Topic', 'detail': 'Always relevant to your audience', 'url': url})
 
     used_hooks = []
     for i, t in enumerate(topics[:5]):
@@ -159,12 +253,14 @@ def build_cards(posts, trends_data):
 
 # ─── HTML ─────────────────────────────────────────────────────────────────────
 
-def build_html(cards, posts, trends_data):
+def build_html(cards, posts, trends_data, youtube_videos):
     now = datetime.now()
     date_str = now.strftime("%A, %B %d, %Y")
     time_str = now.strftime("%I:%M %p UTC")
 
     def cards_html():
+        if not cards:
+            return '<div class="muted" style="font-size:13px;padding:12px">No topics today — check back tomorrow.</div>'
         out = ''
         for c in cards:
             out += f'''
@@ -189,14 +285,35 @@ def build_html(cards, posts, trends_data):
         return out
 
     def trending_html():
+        if not posts:
+            return '<div class="muted" style="font-size:13px;padding:12px">Reddit data unavailable today.</div>'
         out = ''
         for p in posts[:10]:
+            score_display = f"{p['score']:,}" if p['score'] != 100 else '▲'
+            meta = f"r/{p['subreddit']}"
+            if p['comments']:
+                meta += f" &middot; {p['comments']:,} comments"
             out += f'''
 <a href="{p['url']}" target="_blank" class="trend-row">
-  <div class="trend-score">{p['score']:,}</div>
+  <div class="trend-score">{score_display}</div>
   <div>
     <div class="trend-title">{p['title']}</div>
-    <div class="trend-meta">r/{p['subreddit']} &middot; {p['comments']:,} comments</div>
+    <div class="trend-meta">{meta}</div>
+  </div>
+</a>'''
+        return out
+
+    def youtube_html():
+        if not youtube_videos:
+            return '<div class="muted" style="font-size:13px;padding:12px">Add YOUTUBE_API_KEY as a GitHub secret to enable YouTube research.</div>'
+        out = ''
+        for v in youtube_videos[:6]:
+            out += f'''
+<a href="{v['url']}" target="_blank" class="trend-row">
+  <div class="trend-score" style="color:#ff4444;min-width:42px">&#9654;</div>
+  <div>
+    <div class="trend-title">{v['title']}</div>
+    <div class="trend-meta">{v['channel']} &middot; Search: {v['query']}</div>
   </div>
 </a>'''
         return out
@@ -222,6 +339,14 @@ def build_html(cards, posts, trends_data):
         for kw in trends_data['rising']:
             out += f'<span class="tag">{kw}</span>'
         return out
+
+    yt_section = ''
+    if youtube_videos or not YOUTUBE_API_KEY:
+        yt_section = f'''
+  <div class="sec">
+    <div class="sec-title">What's Getting Views on YouTube</div>
+    {youtube_html()}
+  </div>'''
 
     return f'''<!DOCTYPE html>
 <html lang="en">
@@ -304,6 +429,8 @@ a{{color:inherit;text-decoration:none}}
     {trending_html()}
   </div>
 
+  {yt_section}
+
   <div class="sec">
     <div class="sec-title">AI &amp; Work — Google Trends</div>
     {gtrends_html()}
@@ -336,7 +463,7 @@ a{{color:inherit;text-decoration:none}}
 def main():
     print("NexGen Content Engine starting...")
 
-    print("Fetching Reddit...")
+    print("Fetching Reddit (RSS)...")
     posts = fetch_reddit(SUBREDDITS, limit=5)
     print(f"  {len(posts)} posts fetched")
 
@@ -344,12 +471,16 @@ def main():
     trends = fetch_trends()
     print(f"  {len(trends.get('trends', []))} trend keywords, {len(trends.get('rising', []))} rising")
 
+    print("Fetching YouTube...")
+    youtube = fetch_youtube(YOUTUBE_SEARCHES)
+    print(f"  {len(youtube)} YouTube videos fetched")
+
     print("Building content cards...")
     cards = build_cards(posts, trends)
     print(f"  {len(cards)} cards generated")
 
     print("Generating HTML...")
-    html = build_html(cards, posts, trends)
+    html = build_html(cards, posts, trends, youtube)
 
     os.makedirs('dashboard', exist_ok=True)
     with open('dashboard/index.html', 'w', encoding='utf-8') as f:
