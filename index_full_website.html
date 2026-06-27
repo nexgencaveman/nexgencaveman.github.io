@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NexGen Caveman — AI for Guys Who Work With Their Hands</title>
+  <meta name="description" content="You don't need to quit your job. You don't need to become a tech guy. You just need to know what AI can actually do for you and your family." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:    #0D0D0D;
+      --dark:     #1A1A1A;
+      --steel:    #2A2A2A;
+      --mid:      #3D3D3D;
+      --muted:    #888888;
+      --light:    #E8E8E8;
+      --white:    #F5F5F5;
+      --orange:   #E8700A;
+      --orange-dark: #C45E06;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--black);
+      color: var(--light);
+      min-height: 100vh;
+    }
+
+    /* ── NAV ── */
+    nav {
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid var(--steel);
+    }
+
+    .wordmark {
+      font-family: 'Oswald', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+
+    .wordmark span {
+      color: var(--orange);
+    }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 24px;
+      text-align: center;
+      background-color: var(--black);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(232,112,10,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 24px;
+    }
+
+    .hero-headline {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(42px, 8vw, 88px);
+      font-weight: 700;
+      line-height: 1.0;
+      text-transform: uppercase;
+      color: var(--white);
+      max-width: 900px;
+      margin-bottom: 12px;
+    }
+
+    .hero-headline span {
+      color: var(--orange);
+    }
+
+    .hero-sub-headline {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(20px, 3.5vw, 32px);
+      font-weight: 400;
+      color: var(--muted);
+      margin-bottom: 32px;
+      letter-spacing: 0.05em;
+    }
+
+    .hero-body {
+      font-size: clamp(15px, 2vw, 17px);
+      font-weight: 400;
+      line-height: 1.8;
+      color: var(--light);
+      max-width: 560px;
+      margin-bottom: 48px;
+    }
+
+    /* ── FORM AREA ── */
+    .form-wrapper {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    /* ── MAILERLITE FORM PLACEHOLDER ── */
+    /* PASTE YOUR MAILERLITE EMBED CODE INSIDE .mailerlite-embed */
+    .mailerlite-embed {
+      width: 100%;
+    }
+
+    .form-note {
+      margin-top: 14px;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 72px 24px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--steel);
+    }
+
+    .divider span {
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+
+    /* ── REFRAME SECTION ── */
+    .reframe {
+      background: var(--dark);
+      padding: 80px 24px;
+      text-align: center;
+    }
+
+    .reframe-inner {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .section-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 20px;
+    }
+
+    .reframe-headline {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--white);
+      line-height: 1.1;
+      margin-bottom: 32px;
+    }
+
+    .reframe-headline span {
+      color: var(--orange);
+    }
+
+    .reframe-body {
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.9;
+      color: var(--light);
+      margin-bottom: 20px;
+    }
+
+    .reframe-body strong {
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    /* ── PILLARS ── */
+    .pillars {
+      background: var(--black);
+      padding: 80px 24px;
+    }
+
+    .pillars-inner {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .pillars-headline {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(26px, 3.5vw, 42px);
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--white);
+      margin-bottom: 16px;
+    }
+
+    .pillars-sub {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 56px;
+      line-height: 1.7;
+    }
+
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+    }
+
+    @media (max-width: 640px) {
+      .pillars-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .pillar {
+      background: var(--dark);
+      padding: 40px 28px;
+      text-align: left;
+      position: relative;
+    }
+
+    .pillar::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px;
+      height: 40px;
+      background: var(--orange);
+    }
+
+    .pillar-number {
+      font-family: 'Oswald', sans-serif;
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--steel);
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+
+    .pillar-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--white);
+      margin-bottom: 12px;
+    }
+
+    .pillar-body {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+
+    /* ── STORY SECTION ── */
+    .story {
+      background: var(--dark);
+      padding: 80px 24px;
+      border-top: 1px solid var(--steel);
+      border-bottom: 1px solid var(--steel);
+    }
+
+    .story-inner {
+      max-width: 680px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .story-headline {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(26px, 4vw, 44px);
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--white);
+      line-height: 1.1;
+      margin-bottom: 32px;
+    }
+
+    .story-headline span {
+      color: var(--orange);
+    }
+
+    .story-body {
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.9;
+      color: var(--light);
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .story-body strong {
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    .story-callout {
+      margin: 40px 0;
+      padding: 28px 32px;
+      border-left: 4px solid var(--orange);
+      background: var(--steel);
+      text-align: left;
+    }
+
+    .story-callout p {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(18px, 2.5vw, 24px);
+      font-weight: 400;
+      color: var(--white);
+      line-height: 1.5;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── FINAL CTA ── */
+    .cta {
+      background: var(--orange);
+      padding: 80px 24px;
+      text-align: center;
+    }
+
+    .cta-inner {
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .cta-headline {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(32px, 5vw, 56px);
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--black);
+      line-height: 1.0;
+      margin-bottom: 20px;
+    }
+
+    .cta-body {
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.7;
+      color: var(--black);
+      margin-bottom: 40px;
+      opacity: 0.85;
+    }
+
+    .cta-btn {
+      display: inline-block;
+      padding: 20px 48px;
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Oswald', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s ease;
+    }
+
+    .cta-btn:hover {
+      background: var(--dark);
+    }
+
+    .cta-note {
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--black);
+      opacity: 0.6;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--black);
+      padding: 40px 24px;
+      text-align: center;
+      border-top: 1px solid var(--steel);
+    }
+
+    .footer-wordmark {
+      font-family: 'Oswald', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--white);
+      margin-bottom: 10px;
+    }
+
+    .footer-wordmark span { color: var(--orange); }
+
+    .footer-note {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 480px) {
+      .hero { padding: 60px 20px; }
+      .story-callout { padding: 20px; }
+      .cta-btn { width: 100%; text-align: center; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="wordmark">NexGen <span>Caveman</span></div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <p class="hero-eyebrow">Free Video + Guide</p>
+    <h1 class="hero-headline">
+      Your Body Has<br />An <span>Expiration Date.</span><br />AI Doesn't.
+    </h1>
+    <p class="hero-sub-headline">What's your plan B?</p>
+    <p class="hero-body">
+      You've worked hard your whole life. But what happens when the body starts breaking down and the job doesn't care? AI won't replace what you do — but it can protect everything you've built. No tech degree required.
+    </p>
+
+    <div class="form-wrapper">
+      <label class="form-label">Get The Free Video + Guide</label>
+      <div class="mailerlite-embed">
+        <!-- ============================================ -->
+        <!-- PASTE YOUR MAILERLITE EMBED CODE RIGHT HERE -->
+        <!-- ============================================ -->
+      </div>
+      <p class="form-note">Free. No spam. Unsubscribe anytime.</p>
+    </div>
+  </section>
+
+  <!-- DIVIDER -->
+  <div class="divider"><span>The Truth Nobody's Telling You</span></div>
+
+  <!-- REFRAME -->
+  <section class="reframe">
+    <div class="reframe-inner">
+      <p class="section-eyebrow">You've Already Used It</p>
+      <h2 class="reframe-headline">You're Holding A <span>Power Tool</span><br />Like It's A Toy</h2>
+      <p class="reframe-body">
+        Most guys have touched AI. They asked it a trivia question. Looked up directions. Maybe checked the weather. Then they put it down and called it useless.
+      </p>
+      <p class="reframe-body">
+        <strong>That's like picking up a nail gun and using it to scratch your back.</strong> You have no idea what you're actually holding.
+      </p>
+      <p class="reframe-body">
+        I'm not here to teach you technology. I'm here to show you what AI can do for a guy like you — your money, your family, your time, your future — in plain language, with no BS.
+      </p>
+    </div>
+  </section>
+
+  <!-- DIVIDER -->
+  <div class="divider"><span>What You Get</span></div>
+
+  <!-- PILLARS -->
+  <section class="pillars">
+    <div class="pillars-inner">
+      <p class="section-eyebrow">Inside The Free Video + Guide</p>
+      <h2 class="pillars-headline">Three Things That Change<br />Everything</h2>
+      <p class="pillars-sub">No theory. No tech jargon. Just three real ways AI protects you and your family starting today.</p>
+      <div class="pillars-grid">
+        <div class="pillar">
+          <div class="pillar-number">01</div>
+          <div class="pillar-title">Decode Any Document</div>
+          <p class="pillar-body">Contracts, medical bills, insurance policies, inspection reports — AI reads them in plain English and tells you exactly what it means for you.</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-number">02</div>
+          <div class="pillar-title">Protect Your Family</div>
+          <p class="pillar-body">See how a regular guy used AI to get his in-laws out of a real estate deal everyone said they were locked into. No lawyer required.</p>
+        </div>
+        <div class="pillar">
+          <div class="pillar-number">03</div>
+          <div class="pillar-title">Start In 60 Seconds</div>
+          <p class="pillar-body">The exact way to have a real conversation with AI — not a trivia question, a conversation that actually solves something in your life.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STORY -->
+  <section class="story">
+    <div class="story-inner">
+      <p class="section-eyebrow">How This Started</p>
+      <h2 class="story-headline">Everyone In The Room<br />Said <span>They Had No Choice.</span><br />They Were Wrong.</h2>
+      <p class="story-body">
+        My in-laws were being pressured into buying an $855,000 house in a bad neighborhood. The developer said they had to buy. The realtor said they had to buy. Their own attorney said they had to buy.
+      </p>
+      <p class="story-body">
+        I'm nobody. No legal background. No real estate experience. But something didn't sit right. So I asked for the contract and I opened AI.
+      </p>
+
+      <div class="story-callout">
+        <p>"Show me where in this contract it says they are legally obligated to buy this house."</p>
+      </div>
+
+      <p class="story-body">
+        <strong>It wasn't there.</strong> The pressure was manufactured. Every person in that room was counting on them not knowing the difference between pressure and law.
+      </p>
+      <p class="story-body">
+        They got out of the deal. Got most of their deposit back. None of the threats materialized. And I didn't do it with a law degree — I did it with AI and the willingness to ask the right question.
+      </p>
+      <p class="story-body">
+        That's what this is about. Not technology. <strong>Not becoming a tech guy.</strong> Knowing what you're holding so nobody can take advantage of you or your family again.
+      </p>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="cta">
+    <div class="cta-inner">
+      <h2 class="cta-headline">Get The Free<br />Video + Guide</h2>
+      <p class="cta-body">
+        Watch me decode a real document live on camera. Then grab the one-page guide that shows you exactly how to do it yourself in 60 seconds.
+      </p>
+      <a href="#" onclick="window.scrollTo({top:0, behavior:'smooth'}); return false;" class="cta-btn">Send Me The Free Guide</a>
+      <p class="cta-note">Free. No spam. No tech degree required.</p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p class="footer-wordmark">NexGen <span>Caveman</span></p>
+    <p class="footer-note">AI for guys who work with their hands. © 2026 NexGen Caveman. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>
