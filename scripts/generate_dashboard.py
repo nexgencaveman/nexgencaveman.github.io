@@ -541,9 +541,40 @@ a{{color:inherit;text-decoration:none}}
 .footer{{text-align:center;padding:28px;font-size:12px;color:var(--m);border-top:1px solid var(--b);margin-top:16px}}
 
 @media(max-width:600px){{.rec-hook{{font-size:15px}}.rec-header{{gap:6px}}}}
+.gate{{position:fixed;inset:0;background:#0D0D0D;display:flex;align-items:center;justify-content:center;z-index:9999}}
+.gate-box{{background:#161616;border:1px solid #2a2a2a;border-top:3px solid #E8700A;border-radius:8px;padding:40px;width:100%;max-width:360px;text-align:center}}
+.gate-logo{{font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px}}.gate-logo span{{color:#E8700A}}
+.gate-sub{{font-size:13px;color:#888;margin-bottom:28px}}
+.gate-input{{width:100%;background:#1a1a1a;border:1px solid #333;border-radius:4px;padding:12px 14px;font-size:15px;color:#fff;font-family:'Inter',sans-serif;outline:none;margin-bottom:12px}}
+.gate-input:focus{{border-color:#E8700A}}
+.gate-btn{{width:100%;background:#E8700A;color:#fff;border:none;border-radius:4px;padding:13px;font-family:'Oswald',sans-serif;font-size:16px;font-weight:600;letter-spacing:1px;cursor:pointer}}
+.gate-btn:hover{{background:#d4630a}}
+.gate-err{{color:#ff4444;font-size:13px;margin-top:10px;display:none}}
 </style>
 </head>
 <body>
+
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div class="gate-logo">NexGen <span>Content Engine</span></div>
+    <div class="gate-sub">Private dashboard — Charlie only</div>
+    <input class="gate-input" type="password" id="pw" placeholder="Enter password" onkeydown="if(event.key==='Enter')unlock()">
+    <button class="gate-btn" onclick="unlock()">ENTER</button>
+    <div class="gate-err" id="err">Wrong password. Try again.</div>
+  </div>
+</div>
+<script>
+(function(){{
+  var PW='caveman2026';
+  var STORE='ngc_auth';
+  if(localStorage.getItem(STORE)==='1'){{document.getElementById('gate').style.display='none';}}
+  window.unlock=function(){{
+    var v=document.getElementById('pw').value;
+    if(v===PW){{localStorage.setItem(STORE,'1');document.getElementById('gate').style.display='none';}}
+    else{{document.getElementById('err').style.display='block';document.getElementById('pw').value='';document.getElementById('pw').focus();}}
+  }};
+}})();
+</script>
 
 <div class="header">
   <div class="logo">NexGen <span>Content Engine</span></div>
